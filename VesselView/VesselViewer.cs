@@ -37,6 +37,8 @@ namespace VesselView
         private int stagesLastTime = 0;
         private int stagesThisTimeMax = 0;
 
+        private static Mesh bakedMesh = new Mesh();
+
         public void nilOffset(int width, int height) {
             scrOffX = width / 2;
             scrOffY = height / 2;
@@ -49,6 +51,7 @@ namespace VesselView
 
         public void forceRedraw() {
             // ...what? it works.
+            //well actually it doesnt. no rush though.
             lastUpdate = lastUpdate - 1;
         }
 
@@ -202,6 +205,7 @@ namespace VesselView
                     //only render those meshes that are active
                     //examples of inactive meshes seem to include
                     //parachute canopies, engine fairings...
+                    
                     if (meshF.renderer.gameObject.activeInHierarchy)
                     {
                         Mesh mesh = meshF.mesh;
@@ -215,12 +219,33 @@ namespace VesselView
                 }
             }
 
+            SkinnedMeshRenderer[] skinnedMeshes = (SkinnedMeshRenderer[])part.FindModelComponents<SkinnedMeshRenderer>();
+            foreach (SkinnedMeshRenderer smesh in skinnedMeshes)
+            {
+                //only render those meshes that are active
+                //examples of inactive meshes seem to include
+                //parachute canopies, engine fairings...
+
+                if (smesh.gameObject.activeInHierarchy)
+                {
+                    smesh.BakeMesh(bakedMesh);
+                    //create the trans. matrix for this mesh (also update the bounds)
+                    Matrix4x4 transMatrix = genTransMatrix(part.transform, ship);
+                    updateMinMax(bakedMesh.bounds, transMatrix, ref minVec, ref maxVec);
+                    transMatrix = scrnMatrix * transMatrix;
+                    //now render it
+                    renderMesh(bakedMesh.triangles, bakedMesh.vertices, transMatrix, partColor);
+                }
+                
+            }
+
             //finally, update the vessel "bounding box"
             if (minVecG.x > minVec.x) minVecG.x = minVec.x;
             if (minVecG.y > minVec.y) minVecG.y = minVec.y;
+            if (minVecG.z > minVec.z) minVecG.z = minVec.z;
             if (maxVecG.x < maxVec.x) maxVecG.x = maxVec.x;
             if (maxVecG.y < maxVec.y) maxVecG.y = maxVec.y;
-
+            if (maxVecG.z < maxVec.z) maxVecG.z = maxVec.z;
             //and draw a box around the part (later)
             rectQueue.Enqueue(new ViewerConstants.RectColor(new Rect((minVec.x), (minVec.y), (maxVec.x - minVec.x), (maxVec.y - minVec.y)), boxColor));
         }
@@ -280,8 +305,8 @@ namespace VesselView
         /// <param name="screenMatrix">Screen transformation matrix</param>
         private void renderLine(float x1, float y1, float x2, float y2, Matrix4x4 screenMatrix)
         {
-            Vector3 v1 = screenMatrix.MultiplyPoint3x4(new Vector3(x1, y1, 0));
-            Vector3 v2 = screenMatrix.MultiplyPoint3x4(new Vector3(x2, y2, 0));
+            Vector3 v1 = screenMatrix.MultiplyPoint3x4(new Vector3(x1, y1, 0.1f));
+            Vector3 v2 = screenMatrix.MultiplyPoint3x4(new Vector3(x2, y2, 0.1f));
             GL.Vertex(v1);
             GL.Vertex(v2);
         }
@@ -335,7 +360,7 @@ namespace VesselView
             //might also need some rotation to show a different side
             transformTemp.transform.rotation = Quaternion.identity;
             NavBall stockNavBall = GameObject.Find("NavBall").GetComponent<NavBall>();
-            
+
             switch (settings.drawPlane)
             {
                 case (int)ViewerConstants.PLANE.XY:
@@ -349,23 +374,23 @@ namespace VesselView
                     transformTemp.transform.Rotate(new Vector3(90, 0, 0));
                     meshTransMatrix = transformTemp.transform.localToWorldMatrix * meshTransMatrix;
                     break;
-
-                //case (int)ViewerConstants.PLANE.GRNDYZ:
-                    //transformTemp.transform.rotation = vessel.srfRelRotation;
-                    //meshTransMatrix = transformTemp.transform.localToWorldMatrix * meshTransMatrix;
-                    //transformTemp.transform.rotation = vessel.mainBody.transform.rotation.Inverse();
-                    
-                    //transformTemp.transform.Rotate(new Vector3(90, 0, 90));
-                    //meshTransMatrix = transformTemp.transform.localToWorldMatrix * meshTransMatrix;
-                    //break;
+                case (int)ViewerConstants.PLANE.GRND:
+                    transformTemp.transform.rotation = vessel.srfRelRotation;
+                    meshTransMatrix = transformTemp.transform.localToWorldMatrix * meshTransMatrix;
+                    transformTemp.transform.rotation = Quaternion.FromToRotation(vessel.mainBody.GetSurfaceNVector(0, 0), vessel.mainBody.GetSurfaceNVector(vessel.latitude, vessel.longitude));
+                    meshTransMatrix = transformTemp.transform.localToWorldMatrix.inverse * meshTransMatrix;
+                    transformTemp.transform.rotation = Quaternion.identity;
+                    transformTemp.transform.Rotate(new Vector3(0, 0, 90));
+                    meshTransMatrix = transformTemp.transform.localToWorldMatrix * meshTransMatrix;
+                    break;
                 case (int)ViewerConstants.PLANE.REAL:
                     transformTemp.transform.rotation = vessel.vesselTransform.rotation;
                     meshTransMatrix = transformTemp.transform.localToWorldMatrix * meshTransMatrix;
                     break;
             }
-            
+            Matrix4x4 FLATTER = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(1, 1, 0.00001f));
             //scale z by zero to flatten and prevent culling
-            meshTransMatrix = ViewerConstants.FLATTER * meshTransMatrix;
+            meshTransMatrix = FLATTER * meshTransMatrix;
             return meshTransMatrix;
         }
 
@@ -407,6 +432,7 @@ namespace VesselView
                 settings.scaleFact = (idealScaleX < idealScaleY) ? idealScaleX : idealScaleY;
                 //round to nearest integer
                 settings.scaleFact = (int)settings.scaleFact;
+                //and clamp it a bit
                 if (settings.scaleFact < 1) settings.scaleFact = 1;
                 if (settings.scaleFact > 1000) settings.scaleFact = 1000;
             }

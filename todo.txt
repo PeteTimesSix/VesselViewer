@@ -1,0 +1,24 @@
+bugs:
+
+fix pWings
+fix Infernal robotics?
+clearing on text change
+reload
+linux issue?
+Relative to ground plane
+
+features:
+
+persistence
+moduleManager
+part resource consumption/production?
+right click menu
+display target vessel
+Custom rotation plane
+Stress color mode
+Part selector, resource display
+show up in editor?
+
+check:
+
+performance on giants
