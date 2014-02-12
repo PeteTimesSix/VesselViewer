@@ -45,9 +45,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="InternalVesselView.cs" />
+    <Compile Include="IVViewMenu.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="VViewMenu.cs" />
-    <Compile Include="VViewMenuItem.cs" />
+    <Compile Include="VViewSimpleMenu.cs" />
+    <Compile Include="VViewSimpleMenuItem.cs" />
+    <Compile Include="VViewMenuPartSelector.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\VesselView\VesselView.csproj">

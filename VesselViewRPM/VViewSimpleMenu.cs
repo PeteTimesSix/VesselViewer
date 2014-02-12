@@ -7,32 +7,32 @@ using VesselView;
 
 namespace VesselViewRPM
 {
-    class VViewMenu
+    class VViewSimpleMenu : IVViewMenu
     {
-        private VViewMenu rootMenu;
-        private VViewMenuItem[] menuItems;
+        private IVViewMenu rootMenu;
+        private VViewSimpleMenuItem[] menuItems;
         private int activeItemPos = 0;
         public string name;
 
-        public VViewMenuItem ActiveItem
+        public VViewSimpleMenuItem ActiveItem
         {
             get { return menuItems[activeItemPos]; }
         }
 
-        public VViewMenu(VViewMenuItem[] items, string name)
+        public VViewSimpleMenu(VViewSimpleMenuItem[] items, string name)
         {
             this.rootMenu = null;
             this.menuItems = items;
             this.name = name;
         }
         
-        internal void printMenu(ref StringBuilder builder, int width, int height)
+        public void printMenu(ref StringBuilder builder, int width, int height)
         {
             builder.Append("-|");
             builder.Append(name);
             builder.AppendLine("|-");
             int i = 0;
-            foreach (VViewMenuItem item in menuItems) {
+            foreach (VViewSimpleMenuItem item in menuItems) {
                 if (activeItemPos == i)
                 {
                     builder.AppendLine(item.ToString() + " <");
@@ -53,24 +53,30 @@ namespace VesselViewRPM
             builder.AppendLine("VV version "+ViewerConstants.VERSION);
         }
 
-        internal void up()
+        public void up()
         {
             activeItemPos--;
             if (activeItemPos < 0) activeItemPos = menuItems.Length - 1;
         }
 
-        internal void down()
+        public void down()
         {
             activeItemPos++;
             if (activeItemPos >= menuItems.Length) activeItemPos = 0;
         }
 
-        internal VViewMenu getRoot()
+        public IVViewMenu click()
+        {
+            return ActiveItem.click();
+        }
+
+        public IVViewMenu getRoot()
         {
             return rootMenu;
         }
 
-        internal void setRoot(VViewMenu root) {
+        public void setRoot(IVViewMenu root)
+        {
             this.rootMenu = root;
         }
     }

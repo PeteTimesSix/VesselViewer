@@ -26,7 +26,7 @@ namespace JSI.Handlers
         private VesselViewer viewer;
         private ViewerSettings settings;
 
-        private VViewMenu activeMenu;
+        private IVViewMenu activeMenu;
 
         public string ShowMenu(int width, int height)
         {
@@ -64,7 +64,7 @@ namespace JSI.Handlers
                 if (buttonID == buttonEnter)
                 {
                     //returns a menu to change to or null
-                    VViewMenu returnMenu = activeMenu.ActiveItem.click();
+                    IVViewMenu returnMenu = activeMenu.click();
                     if (returnMenu != null)
                     {
                         activeMenu = returnMenu;
@@ -73,7 +73,7 @@ namespace JSI.Handlers
                 }
                 if (buttonID == buttonEsc)
                 {
-                    VViewMenu returnMenu = activeMenu.getRoot();
+                    IVViewMenu returnMenu = activeMenu.getRoot();
                     if (returnMenu != null)
                     {
                         activeMenu = returnMenu;
@@ -133,33 +133,33 @@ namespace JSI.Handlers
         private void setupMenus() {
             //well I was gonna have to hardcode this SOMEWHERE.
             //int propertyToChange, int propertyToPrint, bool valueDirect, int value, int changeMode
-            VViewMenuItem[] DMMItems = {
-                new VViewMenuItem("Bounds CM:",settings,(int)ViewerSettings.IDs.CMB,(int)ViewerSettings.IDs.CMB,true,0,(int)ViewerSettings.CHANGEMODES.SINC),
-                new VViewMenuItem("Mesh CM:",settings,(int)ViewerSettings.IDs.CMM,(int)ViewerSettings.IDs.CMM,true,0,(int)ViewerSettings.CHANGEMODES.SINC),
-                new VViewMenuItem("Fill CM: WIP"),
+            VViewSimpleMenuItem[] DMMItems = {
+                new VViewSimpleMenuItem("Bounds CM:",settings,(int)ViewerSettings.IDs.CMB,(int)ViewerSettings.IDs.CMB,true,0,(int)ViewerSettings.CHANGEMODES.SINC),
+                new VViewSimpleMenuItem("Mesh CM:",settings,(int)ViewerSettings.IDs.CMM,(int)ViewerSettings.IDs.CMM,true,0,(int)ViewerSettings.CHANGEMODES.SINC),
+                new VViewSimpleMenuItem("Fill CM: WIP"),
                                       };
-            VViewMenu dispModeMenu = new VViewMenu(DMMItems, "Display modes");
-            VViewMenuItem[] TMMItems = {
-                new VViewMenuItem("Autocentering:",settings,(int)ViewerSettings.IDs.AUTC,(int)ViewerSettings.IDs.AUTC,true,0,(int)ViewerSettings.CHANGEMODES.BINV),
-                new VViewMenuItem("A.c. scaling:",settings,(int)ViewerSettings.IDs.CRE,(int)ViewerSettings.IDs.CRE,true,0,(int)ViewerSettings.CHANGEMODES.BINV),
-                new VViewMenuItem("Hor. pod center:",settings,(int)ViewerSettings.IDs.CORH,(int)ViewerSettings.IDs.CORH,true,0,(int)ViewerSettings.CHANGEMODES.BINV),
-                new VViewMenuItem("Ver. pod center:",settings,(int)ViewerSettings.IDs.CORV,(int)ViewerSettings.IDs.CORV,true,0,(int)ViewerSettings.CHANGEMODES.BINV),
+            VViewSimpleMenu dispModeMenu = new VViewSimpleMenu(DMMItems, "Display modes");
+            VViewSimpleMenuItem[] TMMItems = {
+                new VViewSimpleMenuItem("Autocentering:",settings,(int)ViewerSettings.IDs.AUTC,(int)ViewerSettings.IDs.AUTC,true,0,(int)ViewerSettings.CHANGEMODES.BINV),
+                new VViewSimpleMenuItem("A.c. scaling:",settings,(int)ViewerSettings.IDs.CRE,(int)ViewerSettings.IDs.CRE,true,0,(int)ViewerSettings.CHANGEMODES.BINV),
+                new VViewSimpleMenuItem("Hor. pod center:",settings,(int)ViewerSettings.IDs.CORH,(int)ViewerSettings.IDs.CORH,true,0,(int)ViewerSettings.CHANGEMODES.BINV),
+                new VViewSimpleMenuItem("Ver. pod center:",settings,(int)ViewerSettings.IDs.CORV,(int)ViewerSettings.IDs.CORV,true,0,(int)ViewerSettings.CHANGEMODES.BINV),
                                       };
-            VViewMenu transModeMenu = new VViewMenu(TMMItems, "Transforms");
-            VViewMenuItem[] MOMItems = {
-                new VViewMenuItem("Latency mode:",settings,(int)ViewerSettings.IDs.LAT,(int)ViewerSettings.IDs.LAT,true,0,(int)ViewerSettings.CHANGEMODES.BINV),
+            VViewSimpleMenu transModeMenu = new VViewSimpleMenu(TMMItems, "Transforms");
+            VViewSimpleMenuItem[] MOMItems = {
+                new VViewSimpleMenuItem("Latency mode:",settings,(int)ViewerSettings.IDs.LAT,(int)ViewerSettings.IDs.LAT,true,0,(int)ViewerSettings.CHANGEMODES.BINV),
                                       };
-            VViewMenu miscMenu = new VViewMenu(MOMItems, "Misc. options");
-            VViewMenuItem[] MAMItems = {
-                new VViewMenuItem("Plane:",settings,(int)ViewerSettings.IDs.DRP,(int)ViewerSettings.IDs.DRP,true,0,(int)ViewerSettings.CHANGEMODES.SINC),
-                new VViewMenuItem("Display modes",dispModeMenu),
-                new VViewMenuItem("Transforms",transModeMenu),
-                new VViewMenuItem("Misc.",miscMenu),
+            VViewSimpleMenu miscMenu = new VViewSimpleMenu(MOMItems, "Misc. options");
+            VViewSimpleMenuItem[] MAMItems = {
+                new VViewSimpleMenuItem("Plane:",settings,(int)ViewerSettings.IDs.DRP,(int)ViewerSettings.IDs.DRP,true,0,(int)ViewerSettings.CHANGEMODES.SINC),
+                new VViewSimpleMenuItem("Display modes",dispModeMenu),
+                new VViewSimpleMenuItem("Transforms",transModeMenu),
+                new VViewSimpleMenuItem("Misc.",miscMenu),
                                       };
-            VViewMenu mainMenu = new VViewMenu(MAMItems, "Main menu");
-            dispModeMenu.setRoot(mainMenu);
-            transModeMenu.setRoot(mainMenu);
-            miscMenu.setRoot(mainMenu);
+            VViewSimpleMenu mainMenu = new VViewSimpleMenu(MAMItems, "Main menu");
+            dispModeMenu.setRoot((IVViewMenu)mainMenu);
+            transModeMenu.setRoot((IVViewMenu)mainMenu);
+            miscMenu.setRoot((IVViewMenu)mainMenu);
 
             activeMenu = mainMenu;
 

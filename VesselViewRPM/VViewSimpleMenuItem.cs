@@ -6,7 +6,7 @@ using VesselView;
 
 namespace VesselViewRPM
 {
-    class VViewMenuItem
+    class VViewSimpleMenuItem
     {
         public string label;
         private ViewerSettings settings;
@@ -17,18 +17,18 @@ namespace VesselViewRPM
         private bool changeValueDirect = true;
         private int changeValue = 0;
         private int changeMode = (int)ViewerSettings.CHANGEMODES.NULL;
-        private VViewMenu menuToChangeTo = null;
+        private IVViewMenu menuToChangeTo = null;
 
-        public VViewMenuItem(string label) {
+        public VViewSimpleMenuItem(string label) {
             this.label = label;
         }
 
-        public VViewMenuItem(string label, VViewMenu menuTarget){
+        public VViewSimpleMenuItem(string label, IVViewMenu menuTarget){
             this.label = label;
             this.menuToChangeTo = menuTarget;
         }
 
-        public VViewMenuItem(string label, VesselView.ViewerSettings settings, int propertyToChange, int propertyToPrint, bool valueDirect, int value, int changeMode)
+        public VViewSimpleMenuItem(string label, VesselView.ViewerSettings settings, int propertyToChange, int propertyToPrint, bool valueDirect, int value, int changeMode)
         {
             this.label = label;
             this.settings = settings;
@@ -42,8 +42,8 @@ namespace VesselViewRPM
         /// <summary>
         /// 
         /// </summary>
-        /// <returns>True if menu should hide</returns>
-        internal VViewMenu click()
+        /// <returns>Menu to change to, null if stay</returns>
+        internal IVViewMenu click()
         {
             if (settings != null) {
                 if (changeValueDirect)
