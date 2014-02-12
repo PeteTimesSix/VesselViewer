@@ -194,7 +194,14 @@ namespace VesselView
             Color boxColor = getPartColor(part, settings.colorModeBox);
 
             //now we need to get all meshes in the part
-            MeshFilter[] meshFilters = (MeshFilter[])part.FindModelComponents<MeshFilter>();
+            List<MeshFilter> meshFList = new List<MeshFilter>();
+            foreach (MeshFilter mf in part.transform.GetComponentsInChildren<MeshFilter>())
+            {
+                meshFList.Add(mf);
+            }
+            
+            //MeshFilter[] meshFilters = (MeshFilter[])part.FindModelComponents<MeshFilter>();
+            MeshFilter[] meshFilters = meshFList.ToArray();
             //used to determine the part bounding box
             Vector3 minVec = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
             Vector3 maxVec = new Vector3(float.MinValue, float.MinValue, float.MinValue);
@@ -222,12 +229,11 @@ namespace VesselView
             SkinnedMeshRenderer[] skinnedMeshes = (SkinnedMeshRenderer[])part.FindModelComponents<SkinnedMeshRenderer>();
             foreach (SkinnedMeshRenderer smesh in skinnedMeshes)
             {
-                //only render those meshes that are active
-                //examples of inactive meshes seem to include
-                //parachute canopies, engine fairings...
 
                 if (smesh.gameObject.activeInHierarchy)
                 {
+                    //skinned meshes seem to be not nearly as conveniently simple
+                    //luckily, I can apparently ask them to do all the work for me
                     smesh.BakeMesh(bakedMesh);
                     //create the trans. matrix for this mesh (also update the bounds)
                     Matrix4x4 transMatrix = genTransMatrix(part.transform, ship);
@@ -305,8 +311,8 @@ namespace VesselView
         /// <param name="screenMatrix">Screen transformation matrix</param>
         private void renderLine(float x1, float y1, float x2, float y2, Matrix4x4 screenMatrix)
         {
-            Vector3 v1 = screenMatrix.MultiplyPoint3x4(new Vector3(x1, y1, 0.1f));
-            Vector3 v2 = screenMatrix.MultiplyPoint3x4(new Vector3(x2, y2, 0.1f));
+            Vector3 v1 = screenMatrix.MultiplyPoint3x4(new Vector3(x1, y1, 0.01f));
+            Vector3 v2 = screenMatrix.MultiplyPoint3x4(new Vector3(x2, y2, 0.01f));
             GL.Vertex(v1);
             GL.Vertex(v2);
         }
