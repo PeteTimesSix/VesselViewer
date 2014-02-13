@@ -23,8 +23,7 @@ namespace VesselView
         //queue of parts yet to be drawn this draw
         private Queue<Part> partQueue = new Queue<Part>();
         private Queue<ViewerConstants.RectColor> rectQueue = new Queue<ViewerConstants.RectColor>();
-        //currently active ship
-        Vessel ship;
+
 
         //gradient of colors for stage display
         private Color[] stageGradient;
@@ -93,10 +92,10 @@ namespace VesselView
             maxVecG = new Vector3(float.MinValue, float.MinValue, float.MinValue);
             lastUpdate = Time.time;
             partQueue.Clear();
-            ship = FlightGlobals.ActiveVessel;
-            if (!ship.isEVA)
+            settings.ship = FlightGlobals.ActiveVessel;
+            if (!settings.ship.isEVA)
             {
-                partQueue.Enqueue(ship.rootPart);
+                partQueue.Enqueue(settings.ship.rootPart);
             }
             renderToTexture(screen);
             partQueue.Clear();
@@ -126,7 +125,7 @@ namespace VesselView
 
                 //clear the texture
                 GL.Clear(true, true, Color.black);
-                //turn on wireframe, since triangles would get filled otherwise
+                //turn on wireframe, since triangles would get filled othershipwise
                 GL.wireframe = true;
                 //set up the screen position and scaling matrix
                 Matrix4x4 matrix = Matrix4x4.TRS(new Vector3(scrOffX, scrOffY, 0), Quaternion.identity, new Vector3(settings.scaleFact, settings.scaleFact, settings.scaleFact));
@@ -217,7 +216,7 @@ namespace VesselView
                     {
                         Mesh mesh = meshF.mesh;
                         //create the trans. matrix for this mesh (also update the bounds)
-                        Matrix4x4 transMatrix = genTransMatrix(meshF.transform, ship);
+                        Matrix4x4 transMatrix = genTransMatrix(meshF.transform, settings.ship);
                         updateMinMax(mesh.bounds, transMatrix, ref minVec, ref maxVec);
                         transMatrix = scrnMatrix * transMatrix;
                         //now render it
@@ -236,7 +235,7 @@ namespace VesselView
                     //luckily, I can apparently ask them to do all the work for me
                     smesh.BakeMesh(bakedMesh);
                     //create the trans. matrix for this mesh (also update the bounds)
-                    Matrix4x4 transMatrix = genTransMatrix(part.transform, ship);
+                    Matrix4x4 transMatrix = genTransMatrix(part.transform, settings.ship);
                     updateMinMax(bakedMesh.bounds, transMatrix, ref minVec, ref maxVec);
                     transMatrix = scrnMatrix * transMatrix;
                     //now render it

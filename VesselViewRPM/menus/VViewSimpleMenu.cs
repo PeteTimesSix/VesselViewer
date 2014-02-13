@@ -79,5 +79,11 @@ namespace VesselViewRPM
         {
             this.rootMenu = root;
         }
+
+
+        public void update(Vessel ship)
+        {
+            //nothing.
+        }
     }
 }

@@ -16,5 +16,7 @@ namespace VesselViewRPM
         void setRoot(IVViewMenu root);
         IVViewMenu getRoot();
 
+        void update(Vessel ship);
+
     }
 }

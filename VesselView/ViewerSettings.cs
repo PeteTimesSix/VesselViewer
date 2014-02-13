@@ -16,6 +16,7 @@ namespace VesselView
         public int scalePos = 0;
         public float scaleFact = 5;
 
+        public Vessel ship;
 
         //is window displayed?
         public bool screenVisible = false;

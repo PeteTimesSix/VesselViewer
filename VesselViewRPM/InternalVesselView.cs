@@ -30,21 +30,32 @@ namespace JSI.Handlers
 
         public string ShowMenu(int width, int height)
         {
+            //MonoBehaviour.print("text draw call");           
             StringBuilder builder = new StringBuilder();
             builder.AppendLine(pageTitle);
-            if (settings.configScreenVisible)
-            {
-                activeMenu.printMenu(ref builder, width, height);
-            }else{
-                builder.AppendLine("M <");
+
+            if (activeMenu != null) {
+                
+                if (settings.configScreenVisible)
+                {
+                    activeMenu.update(settings.ship);
+                    activeMenu.printMenu(ref builder, width, height);
+                }
+                else
+                {
+                    builder.AppendLine("M <");
+                }
             }
+            //MonoBehaviour.print("text draw call done");
             return builder.ToString();
         }
 
 
         public bool RenderViewer(RenderTexture screen, float cameraAspect)
         {
+            //MonoBehaviour.print("screen draw call");
             viewer.drawCall(screen);
+            //MonoBehaviour.print("screen draw call done");
             return true;
         }
 
@@ -99,7 +110,6 @@ namespace JSI.Handlers
             
         }
 
-        // Analysis disable once UnusedParameter
         public void PageActive(bool active, int pageNumber)
         {
             settings.screenVisible = active;
@@ -150,17 +160,23 @@ namespace JSI.Handlers
                 new VViewSimpleMenuItem("Latency mode:",settings,(int)ViewerSettings.IDs.LAT,(int)ViewerSettings.IDs.LAT,true,0,(int)ViewerSettings.CHANGEMODES.BINV),
                                       };
             VViewSimpleMenu miscMenu = new VViewSimpleMenu(MOMItems, "Misc. options");
+
+            MonoBehaviour.print("creating part selector menu");
+            VViewMenuPartSelector partSelectMenu = new VViewMenuPartSelector(settings.ship);
+
             VViewSimpleMenuItem[] MAMItems = {
                 new VViewSimpleMenuItem("Plane:",settings,(int)ViewerSettings.IDs.DRP,(int)ViewerSettings.IDs.DRP,true,0,(int)ViewerSettings.CHANGEMODES.SINC),
                 new VViewSimpleMenuItem("Display modes",dispModeMenu),
                 new VViewSimpleMenuItem("Transforms",transModeMenu),
+                new VViewSimpleMenuItem("Part selector",partSelectMenu),
                 new VViewSimpleMenuItem("Misc.",miscMenu),
                                       };
+            
             VViewSimpleMenu mainMenu = new VViewSimpleMenu(MAMItems, "Main menu");
             dispModeMenu.setRoot((IVViewMenu)mainMenu);
             transModeMenu.setRoot((IVViewMenu)mainMenu);
             miscMenu.setRoot((IVViewMenu)mainMenu);
-
+            partSelectMenu.setRoot((IVViewMenu)mainMenu);
             activeMenu = mainMenu;
 
         }
