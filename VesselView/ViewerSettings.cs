@@ -7,6 +7,9 @@ namespace VesselView
         //settings
         public int colorModeMesh = (int)ViewerConstants.COLORMODE.NONE;
         public int colorModeBox = (int)ViewerConstants.COLORMODE.HIDE;
+        public bool colorModeMeshDull = true;
+        public bool colorModeBoxDull = false;
+
         public bool centerOnRootH = true;
         public bool centerOnRootV = false;
         public bool centerRescale = true;
@@ -22,6 +25,11 @@ namespace VesselView
         public bool screenVisible = false;
         //is window displayed?
         public bool configScreenVisible = false;
+
+        //hardcoded separate mode because its easy and Im lazy
+        public bool partSelectMode = false;
+        public Part selectedPart;
+        public bool selectionSymmetry = false;
 
         /*
          * NULL - nothing

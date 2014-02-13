@@ -50,8 +50,10 @@ namespace VesselView
 
         public void forceRedraw() {
             // ...what? it works.
-            //well actually it doesnt. no rush though.
-            lastUpdate = lastUpdate - 1;
+            //Im assuming the refresh rate of text in RPM
+            //is lower than the background (the config file seems
+            //to support this, so we delay by a tiny bit
+            lastUpdate = Time.time - 0.8f;
         }
 
         public void drawCall(RenderTexture screen) {
@@ -189,9 +191,29 @@ namespace VesselView
             }
 
             //get the appropriate colors
-            Color partColor = getPartColor(part, settings.colorModeMesh);
-            Color boxColor = getPartColor(part, settings.colorModeBox);
+            Color partColor;
+            Color boxColor;
 
+            if (!settings.partSelectMode)
+            {
+                partColor = getPartColor(part, settings.colorModeMesh);
+                boxColor = getPartColor(part, settings.colorModeBox);
+            }
+            else {
+                partColor = getPartColorSelectMode(part, settings);
+                boxColor = getPartColorSelectMode(part, settings);
+            }
+            if (settings.colorModeBoxDull) {
+                boxColor.r = boxColor.r / 2;
+                boxColor.g = boxColor.g / 2;
+                boxColor.b = boxColor.b / 2;
+            }
+            if (settings.colorModeMeshDull)
+            {
+                partColor.r = partColor.r / 2;
+                partColor.g = partColor.g / 2;
+                partColor.b = partColor.b / 2;
+            }
             //now we need to get all meshes in the part
             List<MeshFilter> meshFList = new List<MeshFilter>();
             foreach (MeshFilter mf in part.transform.GetComponentsInChildren<MeshFilter>())
@@ -243,7 +265,7 @@ namespace VesselView
                 }
                 
             }
-
+            //if(settings.partSelectMode & settings.partSelectCenterPart)
             //finally, update the vessel "bounding box"
             if (minVecG.x > minVec.x) minVecG.x = minVec.x;
             if (minVecG.y > minVec.y) minVecG.y = minVec.y;
@@ -399,14 +421,6 @@ namespace VesselView
             return meshTransMatrix;
         }
 
-        //thats a nice function youve got there, RPM, would be a
-        //shame if something were to... happen to it
-        private static Quaternion MirrorX(Quaternion input)
-        {
-            // Witchcraft: It's called mirroring the X axis of the quaternion's conjugate.
-            return new Quaternion(input.x, -input.y, -input.z, input.w);
-        }
-
         /// <summary>
         /// Calculate the ideal scale/offset.
         /// </summary>
@@ -445,6 +459,28 @@ namespace VesselView
             //into the center of the screen
             scrOffX = screenWidth/2 - (int)((minVecG.x + xDiff / 2) * settings.scaleFact);
             scrOffY = screenHeight/2 - (int)((minVecG.y + yDiff / 2) * settings.scaleFact);
+        }
+
+        private bool partIsOnWayToRoot(Part part, Part leaf, Part root) {
+            if (part == null | leaf == null | root == null) return false;
+            if (leaf == root) return false;
+            if (leaf == part) return true;
+            return partIsOnWayToRoot(part, leaf.parent, root);
+        }
+
+        private Color getPartColorSelectMode(Part part, ViewerSettings settings) {
+            Color darkGreen = Color.green;
+            darkGreen.g = 0.7f;
+            
+            Part selectedPart = settings.selectedPart;
+            if (selectedPart == null) return Color.red;
+            if (part == selectedPart) return Color.green;
+            if (settings.selectionSymmetry) {
+                if (selectedPart.symmetryCounterparts.Contains(part)) return darkGreen;
+            }
+            if (partIsOnWayToRoot(part, selectedPart, settings.ship.rootPart)) return Color.yellow;
+            if (part == settings.ship.rootPart) return Color.magenta;
+            return Color.white;
         }
 
         /// <summary>

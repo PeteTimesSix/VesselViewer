@@ -63,7 +63,6 @@ namespace JSI.Handlers
         {
             if (settings.configScreenVisible)
             {
-                //viewer.forceRedraw();
                 if (buttonID == buttonUp)
                 {
                     activeMenu.up();
@@ -78,20 +77,20 @@ namespace JSI.Handlers
                     IVViewMenu returnMenu = activeMenu.click();
                     if (returnMenu != null)
                     {
+                        activeMenu.deactivate();
                         activeMenu = returnMenu;
+                        activeMenu.activate();
                     }
                     
                 }
                 if (buttonID == buttonEsc)
                 {
-                    IVViewMenu returnMenu = activeMenu.getRoot();
+                    IVViewMenu returnMenu = activeMenu.back();
                     if (returnMenu != null)
                     {
+                        activeMenu.deactivate();
                         activeMenu = returnMenu;
-                    }
-                    else 
-                    {
-                        settings.configScreenVisible = false;
+                        activeMenu.activate();
                     }
                 }
             }
@@ -107,7 +106,7 @@ namespace JSI.Handlers
                
             }
 
-            
+            viewer.forceRedraw();
         }
 
         public void PageActive(bool active, int pageNumber)
@@ -162,7 +161,7 @@ namespace JSI.Handlers
             VViewSimpleMenu miscMenu = new VViewSimpleMenu(MOMItems, "Misc. options");
 
             MonoBehaviour.print("creating part selector menu");
-            VViewMenuPartSelector partSelectMenu = new VViewMenuPartSelector(settings.ship);
+            VViewMenuPartSelector partSelectMenu = new VViewMenuPartSelector(settings);
 
             VViewSimpleMenuItem[] MAMItems = {
                 new VViewSimpleMenuItem("Plane:",settings,(int)ViewerSettings.IDs.DRP,(int)ViewerSettings.IDs.DRP,true,0,(int)ViewerSettings.CHANGEMODES.SINC),
@@ -171,12 +170,16 @@ namespace JSI.Handlers
                 new VViewSimpleMenuItem("Part selector",partSelectMenu),
                 new VViewSimpleMenuItem("Misc.",miscMenu),
                                       };
-            
             VViewSimpleMenu mainMenu = new VViewSimpleMenu(MAMItems, "Main menu");
+            VViewSimpleMenuItem[] HIDItems = {
+                new VViewSimpleMenuItem("M",mainMenu)
+                                      };
+            VViewSimpleMenu hideMenu = new VViewSimpleMenu(HIDItems, "");
             dispModeMenu.setRoot((IVViewMenu)mainMenu);
             transModeMenu.setRoot((IVViewMenu)mainMenu);
             miscMenu.setRoot((IVViewMenu)mainMenu);
             partSelectMenu.setRoot((IVViewMenu)mainMenu);
+            mainMenu.setRoot((IVViewMenu)hideMenu);
             activeMenu = mainMenu;
 
         }

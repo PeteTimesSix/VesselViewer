@@ -2,23 +2,26 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using VesselView;
 
 namespace VesselViewRPM
 {
     class VViewMenuPartSelector : IVViewMenu
     {
         private CustomPartTree tree;
-        private IVViewMenu root;
+        private IVViewMenu rootMenu;
+        private ViewerSettings settings;
 
-        private enum SELECTIONMODES {
+        public enum SELECTIONMODES {
             NONE, EXPAND_PARTS, PARTS, EXPAND_ACTIONS, ACTIONS
         }
 
-        private int selectedLine = 0;
-        private int selectionMode = (int)SELECTIONMODES.EXPAND_PARTS;
+        //private int selectedLine = 0;
+        //private int selectionMode = (int)SELECTIONMODES.EXPAND_PARTS;
         
-        public VViewMenuPartSelector(Vessel vessel) {
-            tree = new CustomPartTree(vessel);
+        public VViewMenuPartSelector(ViewerSettings settings) {
+            this.settings = settings;
+            tree = new CustomPartTree(settings.ship);
         }
 
         public void printMenu(ref StringBuilder builder, int width, int height)
@@ -31,7 +34,7 @@ namespace VesselViewRPM
                     if (tree.selectedItem.childrnExpanded)
                     {
                         builder.Append("[-]PARTS");
-                        if (selectionMode == (int)SELECTIONMODES.EXPAND_PARTS)
+                        if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.EXPAND_PARTS)
                         {
                             builder.AppendLine(" <");
                         }
@@ -40,8 +43,8 @@ namespace VesselViewRPM
                         }
                         int counter = 0;
                         foreach (CustomPartTreeItem partItem in tree.selectedItem.children) {
-                            builder.Append(partItem.associatedPart.name);                           
-                            if (selectionMode == (int)SELECTIONMODES.PARTS & counter == selectedLine)
+                            builder.Append(partItem.associatedPart.name);
+                            if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.PARTS & counter == tree.selectedItem.selectedLine)
                             {
                                 builder.AppendLine(" <");
                             }
@@ -54,7 +57,7 @@ namespace VesselViewRPM
                     }
                     else {
                         builder.Append("[+]PARTS");
-                        if (selectionMode == (int)SELECTIONMODES.EXPAND_PARTS)
+                        if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.EXPAND_PARTS)
                         {
                             builder.AppendLine(" <");
                         }
@@ -68,7 +71,7 @@ namespace VesselViewRPM
                     if (tree.selectedItem.actionsExpanded)
                     {
                         builder.Append("[-]ACTIONS");
-                        if (selectionMode == (int)SELECTIONMODES.EXPAND_ACTIONS)
+                        if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.EXPAND_ACTIONS)
                         {
                             builder.AppendLine(" <");
                         }
@@ -76,27 +79,23 @@ namespace VesselViewRPM
                             builder.AppendLine("");
                         }
                         int counter = 0;
-                        foreach (PartModule pm in tree.selectedItem.associatedPart.GetComponents<PartModule>())
-                        {
-                            foreach (BaseAction action in pm.Actions) {
-                                builder.Append(action.name);
-                                if (selectionMode == (int)SELECTIONMODES.ACTIONS & counter == selectedLine)
-                                    {
-                                        builder.AppendLine(" <");
-                                    }
-                                    else
-                                    {
-                                        builder.AppendLine("");
-                                    }
-                                    counter++;
-                                
+                        foreach (BaseEvent action in tree.selectedItem.getActivableEvents()) {
+                            builder.Append(action.guiName);
+                            if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.ACTIONS & counter == tree.selectedItem.selectedLine)
+                            {
+                                builder.AppendLine(" <");
                             }
+                            else
+                            {
+                                builder.AppendLine("");
+                            }
+                            counter++;              
                         }
                     }
                     else
                     {
                         builder.Append("[+]ACTIONS");
-                        if (selectionMode == (int)SELECTIONMODES.EXPAND_ACTIONS)
+                        if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.EXPAND_ACTIONS)
                             {
                                 builder.AppendLine(" <");
                             }
@@ -109,30 +108,44 @@ namespace VesselViewRPM
 
         }
 
-        private void sanityCheck() {
+        /// <summary>
+        /// Returns true if safe to proceed
+        /// </summary>
+        /// <returns></returns>
+        private bool sanityCheck() {
             if (tree.selectedItem == null)
             {
-                selectionMode = (int)SELECTIONMODES.NONE;
+                return false;
             }
             else {
                 if (!tree.selectedItem.hasActions & !tree.selectedItem.hasChildrn)
                 {
-                    selectionMode = (int)SELECTIONMODES.NONE;
-                    selectedLine = 0;
+                    tree.selectedItem.selectionMode = (int)SELECTIONMODES.NONE;
+                    tree.selectedItem.selectedLine = 0;
                 }
-                else if (selectionMode == (int)SELECTIONMODES.NONE)
+                else if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.NONE)
                 {
                     if (tree.selectedItem.hasChildrn)
                     {
-                        selectionMode = (int)SELECTIONMODES.EXPAND_PARTS;
+                        tree.selectedItem.selectionMode = (int)SELECTIONMODES.EXPAND_PARTS;
                     }
                     else
                     {
-                        selectionMode = (int)SELECTIONMODES.EXPAND_ACTIONS;
+                        tree.selectedItem.selectionMode = (int)SELECTIONMODES.EXPAND_ACTIONS;
                     }
                 }
             }
-            
+            if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.PARTS)
+            {
+                if (tree.selectedItem.selectedLine < 0) tree.selectedItem.selectedLine = 0;
+                if (tree.selectedItem.selectedLine >= tree.selectedItem.children.Count()) tree.selectedItem.selectedLine = tree.selectedItem.children.Count() - 1;
+            }
+            else if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.ACTIONS)
+            {
+                if (tree.selectedItem.selectedLine < 0) tree.selectedItem.selectedLine = 0;
+                if (tree.selectedItem.selectedLine >= tree.selectedItem.getActivableEvents().Count()) tree.selectedItem.selectedLine = tree.selectedItem.getActivableEvents().Count() - 1;
+            }
+            return true;
         }
 
         /// <summary>
@@ -140,170 +153,208 @@ namespace VesselViewRPM
         /// </summary>
         public void up()
         {
-            sanityCheck();
-            if (selectionMode == (int)SELECTIONMODES.EXPAND_PARTS) {
+            if (sanityCheck()) {
+            if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.EXPAND_PARTS)
+            {
                 if (tree.selectedItem.hasActions) {
                     if (tree.selectedItem.actionsExpanded)
                     {
-                        selectionMode = (int)SELECTIONMODES.ACTIONS;
-                        selectedLine = tree.selectedItem.actionCount - 1;
+                        tree.selectedItem.selectionMode = (int)SELECTIONMODES.ACTIONS;
+                        tree.selectedItem.selectedLine = tree.selectedItem.actionCount - 1;
                     }
                     else
                     {
-                        selectionMode = (int)SELECTIONMODES.EXPAND_ACTIONS;
+                        tree.selectedItem.selectionMode = (int)SELECTIONMODES.EXPAND_ACTIONS;
                     }
                 }
                 else if (tree.selectedItem.childrnExpanded)
                 {
-                    selectionMode = (int)SELECTIONMODES.PARTS;
-                    selectedLine = tree.selectedItem.children.Count() - 1;
+                    tree.selectedItem.selectionMode = (int)SELECTIONMODES.PARTS;
+                    tree.selectedItem.selectedLine = tree.selectedItem.children.Count() - 1;
                 }
                 else {
-                    selectionMode = (int)SELECTIONMODES.EXPAND_PARTS;
+                    tree.selectedItem.selectionMode = (int)SELECTIONMODES.EXPAND_PARTS;
                 }
             }
-            else if (selectionMode == (int)SELECTIONMODES.PARTS) {
-                selectedLine--;
-                if (selectedLine < 0) {
-                    selectedLine = 0;
-                    selectionMode = (int)SELECTIONMODES.EXPAND_PARTS;
+            else if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.PARTS)
+            {
+                tree.selectedItem.selectedLine--;
+                if (tree.selectedItem.selectedLine < 0)
+                {
+                    tree.selectedItem.selectedLine = 0;
+                    tree.selectedItem.selectionMode = (int)SELECTIONMODES.EXPAND_PARTS;
                 }
             }
-            else if (selectionMode == (int)SELECTIONMODES.EXPAND_ACTIONS) {
+            else if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.EXPAND_ACTIONS)
+            {
                 if (tree.selectedItem.hasChildrn)
                 {
                     if (tree.selectedItem.childrnExpanded)
                     {
-                        selectionMode = (int)SELECTIONMODES.PARTS;
-                        selectedLine = tree.selectedItem.children.Count() - 1;
+                        tree.selectedItem.selectionMode = (int)SELECTIONMODES.PARTS;
+                        tree.selectedItem.selectedLine = tree.selectedItem.children.Count() - 1;
                     }
                     else
                     {
-                        selectionMode = (int)SELECTIONMODES.EXPAND_PARTS;
+                        tree.selectedItem.selectionMode = (int)SELECTIONMODES.EXPAND_PARTS;
                     }
                 }
                 else {
                     if (tree.selectedItem.actionsExpanded)
                     {
-                        selectionMode = (int)SELECTIONMODES.ACTIONS;
-                        selectedLine = tree.selectedItem.actionCount - 1;
+                        tree.selectedItem.selectionMode = (int)SELECTIONMODES.ACTIONS;
+                        tree.selectedItem.selectedLine = tree.selectedItem.actionCount - 1;
                     }
                     else
                     {
-                        selectionMode = (int)SELECTIONMODES.EXPAND_ACTIONS;
+                        tree.selectedItem.selectionMode = (int)SELECTIONMODES.EXPAND_ACTIONS;
                     }
                 }
             }
-            else if (selectionMode == (int)SELECTIONMODES.ACTIONS)
+            else if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.ACTIONS)
             {
-                selectedLine--;
-                if (selectedLine < 0)
+                tree.selectedItem.selectedLine--;
+                if (tree.selectedItem.selectedLine < 0)
                 {
-                    selectedLine = 0;
-                    selectionMode = (int)SELECTIONMODES.EXPAND_ACTIONS;
+                    tree.selectedItem.selectedLine = 0;
+                    tree.selectedItem.selectionMode = (int)SELECTIONMODES.EXPAND_ACTIONS;
                 }
+            }
+            }
+            if (tree.selectedItem != null)
+            {
+                settings.selectedPart = tree.selectedItem.associatedPart;
             }
         }
 
         public void down()
         {
-            sanityCheck();
-            if (selectionMode == (int)SELECTIONMODES.EXPAND_PARTS)
+            if (sanityCheck())
+            {
+                if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.EXPAND_PARTS)
                 {
                     if (tree.selectedItem.childrnExpanded)
                     {
-                        selectionMode = (int)SELECTIONMODES.PARTS;
-                        selectedLine = 0;
+                        tree.selectedItem.selectionMode = (int)SELECTIONMODES.PARTS;
+                        tree.selectedItem.selectedLine = 0;
                     }
                     else if (tree.selectedItem.hasActions)
                     {
-                        selectionMode = (int)SELECTIONMODES.EXPAND_ACTIONS;
+                        tree.selectedItem.selectionMode = (int)SELECTIONMODES.EXPAND_ACTIONS;
                     }
                     else
                     {
-                        selectionMode = (int)SELECTIONMODES.EXPAND_PARTS;
+                        tree.selectedItem.selectionMode = (int)SELECTIONMODES.EXPAND_PARTS;
                     }
                 }
-                else if (selectionMode == (int)SELECTIONMODES.PARTS)
+                else if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.PARTS)
                 {
-                    selectedLine++;
-                    if (selectedLine >= tree.selectedItem.children.Count())
+                    tree.selectedItem.selectedLine++;
+                    if (tree.selectedItem.selectedLine >= tree.selectedItem.children.Count())
                     {
-                        selectedLine = 0;
+                        tree.selectedItem.selectedLine = 0;
                         if (tree.selectedItem.hasActions)
                         {
-                            selectionMode = (int)SELECTIONMODES.EXPAND_ACTIONS;
-                        }
-                        else {
-                            selectionMode = (int)SELECTIONMODES.EXPAND_PARTS;
-                        }
-                    }
-                }
-                else if (selectionMode == (int)SELECTIONMODES.EXPAND_ACTIONS)
-                {
-                    if (tree.selectedItem.actionsExpanded)
-                    {
-                        selectionMode = (int)SELECTIONMODES.ACTIONS;
-                        selectedLine = 0;
-                    }
-                    else {
-                        if (tree.selectedItem.hasChildrn)
-                        {
-                            selectionMode = (int)SELECTIONMODES.EXPAND_PARTS;
-                        }
-                        else {
-                            selectionMode = (int)SELECTIONMODES.EXPAND_ACTIONS;
-                        }
-                    }
-                }
-                else if (selectionMode == (int)SELECTIONMODES.ACTIONS)
-                {
-                    selectedLine++;
-                    if (selectedLine >= tree.selectedItem.actionCount)
-                    {
-                        selectedLine = 0;
-                        if (tree.selectedItem.hasChildrn)
-                        {
-                            selectionMode = (int)SELECTIONMODES.EXPAND_PARTS;
+                            tree.selectedItem.selectionMode = (int)SELECTIONMODES.EXPAND_ACTIONS;
                         }
                         else
                         {
-                            selectionMode = (int)SELECTIONMODES.EXPAND_ACTIONS;
+                            tree.selectedItem.selectionMode = (int)SELECTIONMODES.EXPAND_PARTS;
                         }
                     }
                 }
+                else if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.EXPAND_ACTIONS)
+                {
+                    if (tree.selectedItem.actionsExpanded)
+                    {
+                        tree.selectedItem.selectionMode = (int)SELECTIONMODES.ACTIONS;
+                        tree.selectedItem.selectedLine = 0;
+                    }
+                    else
+                    {
+                        if (tree.selectedItem.hasChildrn)
+                        {
+                            tree.selectedItem.selectionMode = (int)SELECTIONMODES.EXPAND_PARTS;
+                        }
+                        else
+                        {
+                            tree.selectedItem.selectionMode = (int)SELECTIONMODES.EXPAND_ACTIONS;
+                        }
+                    }
+                }
+                else if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.ACTIONS)
+                {
+                    tree.selectedItem.selectedLine++;
+                    if (tree.selectedItem.selectedLine >= tree.selectedItem.actionCount)
+                    {
+                        tree.selectedItem.selectedLine = 0;
+                        if (tree.selectedItem.hasChildrn)
+                        {
+                            tree.selectedItem.selectionMode = (int)SELECTIONMODES.EXPAND_PARTS;
+                        }
+                        else
+                        {
+                            tree.selectedItem.selectionMode = (int)SELECTIONMODES.EXPAND_ACTIONS;
+                        }
+                    }
+                }
+            }
+            if (tree.selectedItem != null)
+            {
+                settings.selectedPart = tree.selectedItem.associatedPart;
+            }
         }
 
         public IVViewMenu click()
         {
-            sanityCheck();
-            switch (selectionMode) {
-                case (int)SELECTIONMODES.NONE:
-                    break;
-                case (int)SELECTIONMODES.EXPAND_PARTS:
-                    tree.selectedItem.childrnExpanded = !tree.selectedItem.childrnExpanded;
-                    break;
-                case (int)SELECTIONMODES.EXPAND_ACTIONS:
-                    tree.selectedItem.actionsExpanded = !tree.selectedItem.actionsExpanded;
-                    break;
-                case (int)SELECTIONMODES.PARTS:
-                    tree.selectedItem = tree.selectedItem.children[selectedLine];
-                    selectionMode = (int)SELECTIONMODES.NONE;
-                    selectedLine = 0;
-                    break;
-                case (int)SELECTIONMODES.ACTIONS:
-                    int counter = 0;
-                    foreach (PartModule pm in tree.selectedItem.associatedPart.GetComponents<PartModule>()) {
-                        foreach (BaseAction action in pm.Actions) {
-                            if (counter == selectedLine) {
-                                //action.Invoke(null);
-                            }
-                            else{
-                                counter++;
-                            }
-                        }
+            if (sanityCheck())
+            {
+                switch (tree.selectedItem.selectionMode)
+                {
+                    case (int)SELECTIONMODES.NONE:
+                        break;
+                    case (int)SELECTIONMODES.EXPAND_PARTS:
+                        tree.selectedItem.childrnExpanded = !tree.selectedItem.childrnExpanded;
+                        break;
+                    case (int)SELECTIONMODES.EXPAND_ACTIONS:
+                        tree.selectedItem.actionsExpanded = !tree.selectedItem.actionsExpanded;
+                        break;
+                    case (int)SELECTIONMODES.PARTS:
+                        tree.selectedItem = tree.selectedItem.children[tree.selectedItem.selectedLine];
+                        tree.selectedItem.selectionMode = (int)SELECTIONMODES.NONE;
+                        tree.selectedItem.selectedLine = 0;
+                        break;
+                    case (int)SELECTIONMODES.ACTIONS:
+
+                        //REALLY a lot easier than expected
+                        tree.selectedItem.getActivableEvents()[tree.selectedItem.selectedLine].Invoke(null);
+
+                        break;
+                }
+            }
+            if (tree.selectedItem != null)
+            {
+                settings.selectedPart = tree.selectedItem.associatedPart;
+            }
+            return null;
+        }
+
+        public IVViewMenu back()
+        {
+            if (sanityCheck()) {
+                if (tree.rootSelected())
+                {
+                    return rootMenu;
+                }
+                else
+                {
+                    tree.selectedItem = tree.selectedItem.root;
+                    if (tree.selectedItem != null)
+                    {
+                        settings.selectedPart = tree.selectedItem.associatedPart;
                     }
-                    break;
+                    return null;
+                }
             }
             
             return null;
@@ -311,18 +362,34 @@ namespace VesselViewRPM
 
         public void setRoot(IVViewMenu root)
         {
-            this.root = root;
+            this.rootMenu = root;
         }
 
         public IVViewMenu getRoot()
         {
-            return root;
+            return rootMenu;
         }
 
         public void update(Vessel ship)
         {
             sanityCheck();
             tree.updateTree(ship);
+        }
+
+
+
+        public void activate()
+        {
+            settings.partSelectMode = true;
+            if (tree.selectedItem != null)
+            {
+                settings.selectedPart = tree.selectedItem.associatedPart;
+            }
+        }
+
+        public void deactivate()
+        {
+            settings.partSelectMode = false;
         }
     }
 }

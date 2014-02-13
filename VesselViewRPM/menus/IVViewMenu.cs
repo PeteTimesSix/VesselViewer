@@ -12,6 +12,10 @@ namespace VesselViewRPM
         void up();
         void down();
         IVViewMenu click();
+        IVViewMenu back();
+
+        void activate();
+        void deactivate();
 
         void setRoot(IVViewMenu root);
         IVViewMenu getRoot();

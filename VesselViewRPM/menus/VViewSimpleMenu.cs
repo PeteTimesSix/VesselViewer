@@ -70,6 +70,11 @@ namespace VesselViewRPM
             return ActiveItem.click();
         }
 
+        public IVViewMenu back()
+        {
+            return rootMenu;
+        }
+
         public IVViewMenu getRoot()
         {
             return rootMenu;
@@ -84,6 +89,18 @@ namespace VesselViewRPM
         public void update(Vessel ship)
         {
             //nothing.
+        }
+
+
+
+        public void activate()
+        {
+            //nothing
+        }
+
+        public void deactivate()
+        {
+            //nothing
         }
     }
 }

@@ -18,6 +18,7 @@ Custom rotation plane
 Stress color mode
 Part selector, resource display
 show up in editor?
+custom color modes
 
 check:
 

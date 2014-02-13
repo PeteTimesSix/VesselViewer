@@ -20,6 +20,9 @@ namespace VesselViewRPM
         public bool hasChildrn = false;
         public bool hasActions = false;
 
+        public int selectedLine = 0;
+        public int selectionMode = (int)VViewMenuPartSelector.SELECTIONMODES.EXPAND_PARTS;
+
         public CustomPartTreeItem(Part part, CustomPartTreeItem root) {
             this.associatedPart = part;
             this.root = root;
@@ -54,6 +57,32 @@ namespace VesselViewRPM
             children = newChildren;
         }
 
+
+        public BaseEvent[] getActivableEvents()
+        {
+            int counter=0;
+            foreach (PartModule pm in associatedPart.GetComponents<PartModule>())
+            {
+                foreach (BaseEvent mEvent in pm.Events)
+                {
+                    if (mEvent.guiActive & mEvent.active) counter++;
+                }
+            }
+            BaseEvent[] events = new BaseEvent[counter];
+            counter = 0;
+            foreach (PartModule pm in associatedPart.GetComponents<PartModule>())
+            {
+                foreach (BaseEvent mEvent in pm.Events)
+                {
+                    if (mEvent.guiActive & mEvent.active) 
+                    {
+                        events[counter] = mEvent;
+                        counter++;
+                    }
+                }
+            }
+            return events;
+        }
 
     }
 }

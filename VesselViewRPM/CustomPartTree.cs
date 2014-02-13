@@ -24,33 +24,60 @@ namespace VesselViewRPM
 
         }
 
+        public bool rootSelected() {
+            if (selectedItem == rootItem) return true;
+            else return false;
+        }
+
         public void updateTree(Vessel vessel) {
-            if (vessel != null) {
+            if (vessel != null)
+            {
                 if (!vessel.isEVA)
                 {
                     Part root = vessel.rootPart;
-                    MonoBehaviour.print("checking nullness");
+                    //MonoBehaviour.print("checking nullness");
                     if (rootItem == null)
                     {
                         rootItem = new CustomPartTreeItem(root, null);
                         selectedItem = rootItem;
                     }
-                    MonoBehaviour.print("checking nonequality");
+                    //MonoBehaviour.print("checking nonequality");
                     if (rootItem.associatedPart != root)
                     {
                         rootItem = new CustomPartTreeItem(root, null);
                         selectedItem = rootItem;
                     }
-                    MonoBehaviour.print("beginning recursion");
+                    //MonoBehaviour.print("beginning recursion");
                     recursiveUpdate(rootItem);
-                    MonoBehaviour.print("ending recursion");
-                }     
+                    //MonoBehaviour.print("ending recursion");
+                }
+            }
+            else {
+                //a dummy root part, because dear god trying to check for null
+                //EVERYWHERE would drive me mad
+                if (rootItem == null) {
+                    rootItem = new CustomPartTreeItem(new Part(), null);
+                    selectedItem = rootItem;
+                }
             }        
         }
 
+        private bool isSelectedOrChildren(CustomPartTreeItem leaf) {
+            if (leaf == selectedItem) return true;
+            foreach (CustomPartTreeItem branch in leaf.children) {
+                if (isSelectedOrChildren(branch)) return true;
+            }
+            return false;
+        }
+
         public void recursiveUpdate(CustomPartTreeItem leaf) {
-            MonoBehaviour.print("now handling "+leaf.associatedPart.name);
-            MonoBehaviour.print("checking children count");
+            if (leaf.associatedPart == null)
+            {
+                selectedItem = leaf.root;
+                return;
+            }
+            //MonoBehaviour.print("now handling "+leaf.associatedPart.name);
+            //MonoBehaviour.print("checking children count");
             //first update if either of the expandable menus exists
             if (leaf.associatedPart.children.Count != 0)
             {
@@ -59,24 +86,23 @@ namespace VesselViewRPM
             else {
                 leaf.hasChildrn = false;
             }
-            MonoBehaviour.print("checking action count");
-            bool hasActions = false;
-            foreach (PartModule pm in leaf.associatedPart.GetComponents<PartModule>()) {
-                if (pm.Actions.Count > 0) {
-                    hasActions = true;
-                    break;
-                }
+            //MonoBehaviour.print("checking action count");
+            if (leaf.getActivableEvents().Count() > 0)
+            {
+                leaf.hasActions = true;
             }
-            leaf.hasActions = hasActions;
-            MonoBehaviour.print("onto updates");
+            else {
+                leaf.hasActions = false;
+            }
+            //MonoBehaviour.print("onto updates");
             //then update the branches depending on any changes in the part list
             //but only bother if the list is expanded
             if (leaf.childrnExpanded) {
-                MonoBehaviour.print("children expanded");
+                //MonoBehaviour.print("children expanded");
                 //first check if the branches even exist
                 if (leaf.children == null)
                 {
-                    MonoBehaviour.print("children null, creating");
+                    //MonoBehaviour.print("children null, creating");
                     //if not, create them
                     List<CustomPartTreeItem> leaves = new List<CustomPartTreeItem>();
                     //CustomPartTreeItem[] leaves = new CustomPartTreeItem[leaf.associatedPart.children.Count];
@@ -91,22 +117,24 @@ namespace VesselViewRPM
                     leaf.children = leaves.ToArray();
                 }
                 else {
-                    MonoBehaviour.print("children exist, checking for changes");
+                    //MonoBehaviour.print("children exist, checking for changes");
                     //if they do, check for changes
                     for (int i = 0; i < leaf.children.Count(); i++) {
-                       
+                        if (leaf.associatedPart == null) {
+                            
+                        }
                         if (!leaf.associatedPart.children.Contains(leaf.children[i].associatedPart))
                         {
                             MonoBehaviour.print("child " + i + " of " + leaf.children.Count());
-                            //if (leaf.children[i].isSelectedOrChildren()) {
-                            //    selectedItem = leaf;
-                            //}
+                            if (isSelectedOrChildren(leaf.children[i])) {
+                               selectedItem = leaf;
+                            }
                             leaf.removeBranch(i);
                         }
                         
                         
                     }
-                    MonoBehaviour.print("checking for parts not listed");
+                    //MonoBehaviour.print("checking for parts not listed");
                     foreach (Part part in leaf.associatedPart.children)
                     {
                         bool found = false;
@@ -121,31 +149,26 @@ namespace VesselViewRPM
                         }
                     }
                 }
-                MonoBehaviour.print("updating recursively");
+                //MonoBehaviour.print("updating recursively");
                 //then recursively update
                 foreach (CustomPartTreeItem branch in leaf.children)
                 {
-                    MonoBehaviour.print("recursion step begin");
+                    //MonoBehaviour.print("recursion step begin");
                     recursiveUpdate(branch);
-                    MonoBehaviour.print("recursion step end");
+                    //MonoBehaviour.print("recursion step end");
                 }
             }else{
-                MonoBehaviour.print("children not expanded, nulling");
+                //MonoBehaviour.print("children not expanded, nulling");
                 leaf.children = null;
             }
             //now the list of actions
             if (leaf.actionsExpanded)
             {
-                MonoBehaviour.print("actions expanded");
-                int actionCount = 0;
-                foreach (PartModule pm in leaf.associatedPart.GetComponents<PartModule>())
-                {
-                    actionCount += pm.Actions.Count();
-                }
-                leaf.actionCount = actionCount;
+                //MonoBehaviour.print("actions expanded");
+                leaf.actionCount = leaf.getActivableEvents().Count();
             }
             else {
-                MonoBehaviour.print("actions not expanded, zeroing");
+                //MonoBehaviour.print("actions not expanded, zeroing");
                 leaf.actionCount = 0;
             }
         }
