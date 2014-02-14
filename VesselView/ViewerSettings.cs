@@ -29,7 +29,9 @@ namespace VesselView
         //hardcoded separate mode because its easy and Im lazy
         public bool partSelectMode = false;
         public Part selectedPart;
-        public bool selectionSymmetry = false;
+        public Part subselectedPart;
+        public bool selectionSymmetry = true;
+        public bool selectionCenter = false;
 
         /*
          * NULL - nothing
@@ -45,11 +47,16 @@ namespace VesselView
          * SCA - scaling factor
          * SV - is screen visible
          * CSV - is config screen/menu visible
+         * MDULL - dull mesh
+         * BDULL - dull box
+         * PSMOD - part selection mode
+         * PSSYM - part selection affect symmetry
+         * PSCEN - zoom in on selected part
          */
 
         public enum IDs 
         {
-            NULL, CMM, CMB, CORH, CORV, CRE, AUTC, LAT, DRP, SCP, SCA, SV, CSV
+            NULL, CMM, CMB, CORH, CORV, CRE, AUTC, LAT, DRP, SCP, SCA, SV, CSV, MDULL, BDULL, PSMOD, PSSYM, PSCEN
         }
 
         /*
@@ -168,6 +175,22 @@ namespace VesselView
                         case (int)IDs.CSV:
                             configScreenVisible = boolVal;
                             break;
+                        case (int)IDs.MDULL:
+                            colorModeMeshDull = boolVal;
+                            break;
+                        case (int)IDs.BDULL:
+                            colorModeBoxDull = boolVal;
+                            break;
+                        case (int)IDs.PSMOD:
+                            partSelectMode = boolVal;
+                            break;
+                        case (int)IDs.PSSYM:
+                            selectionSymmetry = boolVal;
+                            break;
+                        case (int)IDs.PSCEN:
+                            selectionCenter = boolVal;
+                            break;
+
                     }
                     break;
                 case (int)CHANGEMODES.BINV:
@@ -193,6 +216,21 @@ namespace VesselView
                             break;
                         case (int)IDs.CSV:
                             configScreenVisible = !configScreenVisible;
+                            break;
+                        case (int)IDs.MDULL:
+                            colorModeMeshDull = !colorModeMeshDull;
+                            break;
+                        case (int)IDs.BDULL:
+                            colorModeBoxDull = !colorModeBoxDull;
+                            break;
+                        case (int)IDs.PSMOD:
+                            partSelectMode = !partSelectMode;
+                            break;
+                        case (int)IDs.PSSYM:
+                            selectionSymmetry = !selectionSymmetry;
+                            break;
+                        case (int)IDs.PSCEN:
+                            selectionCenter = !selectionCenter;
                             break;
                     }
                     break;
@@ -254,6 +292,16 @@ namespace VesselView
                     return "" + screenVisible;
                 case (int)IDs.CSV:
                     return "" + configScreenVisible;
+                case (int)IDs.BDULL:
+                    return boolAsString(colorModeBoxDull);
+                case (int)IDs.MDULL:
+                    return boolAsString(colorModeMeshDull);
+                case (int)IDs.PSMOD:
+                    return boolAsString(partSelectMode);
+                case (int)IDs.PSSYM:
+                    return boolAsString(selectionSymmetry);
+                case (int)IDs.PSCEN:
+                    return boolAsString(selectionCenter);
             }
             return "ERROR";
         }

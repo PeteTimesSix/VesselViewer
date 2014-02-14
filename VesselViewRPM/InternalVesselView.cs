@@ -22,6 +22,8 @@ namespace JSI.Handlers
         public int buttonEsc = 3;
         [KSPField]
         public int buttonHome = 4;
+
+        private bool ready = false;
         
         private VesselViewer viewer;
         private ViewerSettings settings;
@@ -34,17 +36,9 @@ namespace JSI.Handlers
             StringBuilder builder = new StringBuilder();
             builder.AppendLine(pageTitle);
 
-            if (activeMenu != null) {
-                
-                if (settings.configScreenVisible)
-                {
-                    activeMenu.update(settings.ship);
-                    activeMenu.printMenu(ref builder, width, height);
-                }
-                else
-                {
-                    builder.AppendLine("M <");
-                }
+            if (activeMenu != null) { 
+                activeMenu.update(settings.ship);
+                activeMenu.printMenu(ref builder, width, height);
             }
             //MonoBehaviour.print("text draw call done");
             return builder.ToString();
@@ -61,45 +55,39 @@ namespace JSI.Handlers
 
         public void ButtonProcessor(int buttonID)
         {
-            if (settings.configScreenVisible)
+            
+            if (buttonID == buttonUp)
             {
-                if (buttonID == buttonUp)
+                activeMenu.up();
+            }
+            if (buttonID == buttonDown)
+            {
+                activeMenu.down();
+            }
+            if (buttonID == buttonEnter)
+            {
+                //returns a menu to change to or null
+                IVViewMenu returnMenu = activeMenu.click();
+                if (returnMenu != null)
                 {
-                    activeMenu.up();
+                    activeMenu.deactivate();
+                    activeMenu = returnMenu;
+                    activeMenu.activate();
                 }
-                if (buttonID == buttonDown)
-                {
-                    activeMenu.down();
-                }
-                if (buttonID == buttonEnter)
-                {
-                    //returns a menu to change to or null
-                    IVViewMenu returnMenu = activeMenu.click();
-                    if (returnMenu != null)
-                    {
-                        activeMenu.deactivate();
-                        activeMenu = returnMenu;
-                        activeMenu.activate();
-                    }
                     
-                }
-                if (buttonID == buttonEsc)
+            }
+            if (buttonID == buttonEsc)
+            {
+                IVViewMenu returnMenu = activeMenu.back();
+                if (returnMenu != null)
                 {
-                    IVViewMenu returnMenu = activeMenu.back();
-                    if (returnMenu != null)
-                    {
-                        activeMenu.deactivate();
-                        activeMenu = returnMenu;
-                        activeMenu.activate();
-                    }
+                    activeMenu.deactivate();
+                    activeMenu = returnMenu;
+                    activeMenu.activate();
                 }
             }
-            else {
-                if (buttonID == buttonEnter)
-                {
-                    settings.configScreenVisible = true;
-                }
-            }
+            
+            
             
             if (buttonID == buttonHome)
             {
@@ -111,6 +99,7 @@ namespace JSI.Handlers
 
         public void PageActive(bool active, int pageNumber)
         {
+            if (!ready) Start();
             settings.screenVisible = active;
         }
 
@@ -119,6 +108,7 @@ namespace JSI.Handlers
             viewer = new VesselViewer();
             settings = viewer.settings;
             setupMenus();
+            ready = true;
         }
 
 
@@ -143,44 +133,40 @@ namespace JSI.Handlers
             //well I was gonna have to hardcode this SOMEWHERE.
             //int propertyToChange, int propertyToPrint, bool valueDirect, int value, int changeMode
             VViewSimpleMenuItem[] DMMItems = {
-                new VViewSimpleMenuItem("Bounds CM:",settings,(int)ViewerSettings.IDs.CMB,(int)ViewerSettings.IDs.CMB,true,0,(int)ViewerSettings.CHANGEMODES.SINC),
-                new VViewSimpleMenuItem("Mesh CM:",settings,(int)ViewerSettings.IDs.CMM,(int)ViewerSettings.IDs.CMM,true,0,(int)ViewerSettings.CHANGEMODES.SINC),
-                new VViewSimpleMenuItem("Fill CM: WIP"),
+                new VViewSimpleMenuItem("Bounds color code:",settings,(int)ViewerSettings.IDs.CMB,(int)ViewerSettings.IDs.CMB,true,0,(int)ViewerSettings.CHANGEMODES.SINC),
+                new VViewSimpleMenuItem("Mesh color mode:",settings,(int)ViewerSettings.IDs.CMM,(int)ViewerSettings.IDs.CMM,true,0,(int)ViewerSettings.CHANGEMODES.SINC),
+                new VViewSimpleMenuItem("Dull bounds:",settings,(int)ViewerSettings.IDs.BDULL,(int)ViewerSettings.IDs.BDULL,true,0,(int)ViewerSettings.CHANGEMODES.BINV),
+                new VViewSimpleMenuItem("Dull mesh:",settings,(int)ViewerSettings.IDs.MDULL,(int)ViewerSettings.IDs.MDULL,true,0,(int)ViewerSettings.CHANGEMODES.BINV),
                                       };
             VViewSimpleMenu dispModeMenu = new VViewSimpleMenu(DMMItems, "Display modes");
-            VViewSimpleMenuItem[] TMMItems = {
+
+            VViewMenuPartSelector partSelectMenu = new VViewMenuPartSelector(settings);
+            VViewSimpleMenuItem[] PCMItems = {
+                new VViewSimpleMenuItem("Latency mode:",settings,(int)ViewerSettings.IDs.LAT,(int)ViewerSettings.IDs.LAT,true,0,(int)ViewerSettings.CHANGEMODES.BINV),
                 new VViewSimpleMenuItem("Autocentering:",settings,(int)ViewerSettings.IDs.AUTC,(int)ViewerSettings.IDs.AUTC,true,0,(int)ViewerSettings.CHANGEMODES.BINV),
                 new VViewSimpleMenuItem("A.c. scaling:",settings,(int)ViewerSettings.IDs.CRE,(int)ViewerSettings.IDs.CRE,true,0,(int)ViewerSettings.CHANGEMODES.BINV),
                 new VViewSimpleMenuItem("Hor. pod center:",settings,(int)ViewerSettings.IDs.CORH,(int)ViewerSettings.IDs.CORH,true,0,(int)ViewerSettings.CHANGEMODES.BINV),
                 new VViewSimpleMenuItem("Ver. pod center:",settings,(int)ViewerSettings.IDs.CORV,(int)ViewerSettings.IDs.CORV,true,0,(int)ViewerSettings.CHANGEMODES.BINV),
+                new VViewSimpleMenuItem("Zoom on selection:",settings,(int)ViewerSettings.IDs.PSCEN,(int)ViewerSettings.IDs.PSCEN,true,0,(int)ViewerSettings.CHANGEMODES.BINV),
+                new VViewSimpleMenuItem("Affect symmetry:",settings,(int)ViewerSettings.IDs.PSSYM,(int)ViewerSettings.IDs.PSSYM,true,0,(int)ViewerSettings.CHANGEMODES.BINV),
                                       };
-            VViewSimpleMenu transModeMenu = new VViewSimpleMenu(TMMItems, "Transforms");
-            VViewSimpleMenuItem[] MOMItems = {
-                new VViewSimpleMenuItem("Latency mode:",settings,(int)ViewerSettings.IDs.LAT,(int)ViewerSettings.IDs.LAT,true,0,(int)ViewerSettings.CHANGEMODES.BINV),
-                                      };
-            VViewSimpleMenu miscMenu = new VViewSimpleMenu(MOMItems, "Misc. options");
-
-            MonoBehaviour.print("creating part selector menu");
-            VViewMenuPartSelector partSelectMenu = new VViewMenuPartSelector(settings);
-
+            VViewSimpleMenu partSelectConfigMenu = new VViewSimpleMenu(PCMItems, "P. sel. config");
             VViewSimpleMenuItem[] MAMItems = {
                 new VViewSimpleMenuItem("Plane:",settings,(int)ViewerSettings.IDs.DRP,(int)ViewerSettings.IDs.DRP,true,0,(int)ViewerSettings.CHANGEMODES.SINC),
                 new VViewSimpleMenuItem("Display modes",dispModeMenu),
-                new VViewSimpleMenuItem("Transforms",transModeMenu),
                 new VViewSimpleMenuItem("Part selector",partSelectMenu),
-                new VViewSimpleMenuItem("Misc.",miscMenu),
+                new VViewSimpleMenuItem("Config",partSelectConfigMenu),
                                       };
             VViewSimpleMenu mainMenu = new VViewSimpleMenu(MAMItems, "Main menu");
             VViewSimpleMenuItem[] HIDItems = {
-                new VViewSimpleMenuItem("M",mainMenu)
+                new VViewSimpleMenuItem("Show",mainMenu)
                                       };
-            VViewSimpleMenu hideMenu = new VViewSimpleMenu(HIDItems, "");
+            VViewSimpleMenu hideMenu = new VViewSimpleMenu(HIDItems, "Hidden");
             dispModeMenu.setRoot((IVViewMenu)mainMenu);
-            transModeMenu.setRoot((IVViewMenu)mainMenu);
-            miscMenu.setRoot((IVViewMenu)mainMenu);
             partSelectMenu.setRoot((IVViewMenu)mainMenu);
+            partSelectConfigMenu.setRoot((IVViewMenu)mainMenu);
             mainMenu.setRoot((IVViewMenu)hideMenu);
-            activeMenu = mainMenu;
+            activeMenu = hideMenu;
 
         }
     }

@@ -118,7 +118,12 @@ namespace VesselViewRPM
                 return false;
             }
             else {
-                if (!tree.selectedItem.hasActions & !tree.selectedItem.hasChildrn)
+                if (!tree.selectedItem.hasActions & tree.selectedItem.selectionMode == (int)SELECTIONMODES.ACTIONS)
+                {
+                    tree.selectedItem.selectionMode = (int)SELECTIONMODES.NONE;
+                    tree.selectedItem.selectedLine = 0;
+                }
+                if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.PARTS & !tree.selectedItem.hasChildrn)
                 {
                     tree.selectedItem.selectionMode = (int)SELECTIONMODES.NONE;
                     tree.selectedItem.selectedLine = 0;
@@ -129,7 +134,7 @@ namespace VesselViewRPM
                     {
                         tree.selectedItem.selectionMode = (int)SELECTIONMODES.EXPAND_PARTS;
                     }
-                    else
+                    else if (tree.selectedItem.hasActions)
                     {
                         tree.selectedItem.selectionMode = (int)SELECTIONMODES.EXPAND_ACTIONS;
                     }
@@ -327,7 +332,29 @@ namespace VesselViewRPM
                     case (int)SELECTIONMODES.ACTIONS:
 
                         //REALLY a lot easier than expected
-                        tree.selectedItem.getActivableEvents()[tree.selectedItem.selectedLine].Invoke(null);
+                        
+                        if (settings.selectionSymmetry) {
+                            string name = tree.selectedItem.getActivableEvents()[tree.selectedItem.selectedLine].guiName;
+                            foreach (Part part in tree.selectedItem.associatedPart.symmetryCounterparts) {
+                                if (part == null) continue;
+                                foreach (PartModule pm in part.GetComponents<PartModule>())
+                                {
+                                    foreach (BaseEvent mEvent in pm.Events)
+                                    {
+                                        if (mEvent.guiActive & mEvent.active)
+                                        {
+                                            if (mEvent.guiName.Equals(name))
+                                            {
+                                                mEvent.Invoke();
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        //the symmetry ones are done first because some actions affect
+                        //the gui name of the event (such as toggling engines)
+                        tree.selectedItem.getActivableEvents()[tree.selectedItem.selectedLine].Invoke();
 
                         break;
                 }
@@ -381,6 +408,7 @@ namespace VesselViewRPM
         public void activate()
         {
             settings.partSelectMode = true;
+            
             if (tree.selectedItem != null)
             {
                 settings.selectedPart = tree.selectedItem.associatedPart;

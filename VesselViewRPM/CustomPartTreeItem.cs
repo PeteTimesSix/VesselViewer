@@ -14,14 +14,14 @@ namespace VesselViewRPM
 
         public Part associatedPart;
 
-        public bool childrnExpanded=false;
+        public bool childrnExpanded=true;
         public bool actionsExpanded=false;
 
         public bool hasChildrn = false;
         public bool hasActions = false;
 
         public int selectedLine = 0;
-        public int selectionMode = (int)VViewMenuPartSelector.SELECTIONMODES.EXPAND_PARTS;
+        public int selectionMode = (int)VViewMenuPartSelector.SELECTIONMODES.PARTS;
 
         public CustomPartTreeItem(Part part, CustomPartTreeItem root) {
             this.associatedPart = part;
@@ -61,27 +61,31 @@ namespace VesselViewRPM
         public BaseEvent[] getActivableEvents()
         {
             int counter=0;
-            foreach (PartModule pm in associatedPart.GetComponents<PartModule>())
+            if (associatedPart != null)
             {
-                foreach (BaseEvent mEvent in pm.Events)
+                foreach (PartModule pm in associatedPart.GetComponents<PartModule>())
                 {
-                    if (mEvent.guiActive & mEvent.active) counter++;
-                }
-            }
-            BaseEvent[] events = new BaseEvent[counter];
-            counter = 0;
-            foreach (PartModule pm in associatedPart.GetComponents<PartModule>())
-            {
-                foreach (BaseEvent mEvent in pm.Events)
-                {
-                    if (mEvent.guiActive & mEvent.active) 
+                    foreach (BaseEvent mEvent in pm.Events)
                     {
-                        events[counter] = mEvent;
-                        counter++;
+                        if (mEvent.guiActive & mEvent.active) counter++;
                     }
                 }
+                BaseEvent[] events = new BaseEvent[counter];
+                counter = 0;
+                foreach (PartModule pm in associatedPart.GetComponents<PartModule>())
+                {
+                    foreach (BaseEvent mEvent in pm.Events)
+                    {
+                        if (mEvent.guiActive & mEvent.active)
+                        {
+                            events[counter] = mEvent;
+                            counter++;
+                        }
+                    }
+                }
+                return events;
             }
-            return events;
+            else return new BaseEvent[0];
         }
 
     }

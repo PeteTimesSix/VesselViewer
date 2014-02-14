@@ -130,7 +130,7 @@ namespace VesselView
                 //turn on wireframe, since triangles would get filled othershipwise
                 GL.wireframe = true;
                 //set up the screen position and scaling matrix
-                Matrix4x4 matrix = Matrix4x4.TRS(new Vector3(scrOffX, scrOffY, 0), Quaternion.identity, new Vector3(settings.scaleFact, settings.scaleFact, settings.scaleFact));
+                Matrix4x4 matrix = Matrix4x4.TRS(new Vector3(scrOffX, scrOffY, 0), Quaternion.identity, new Vector3(settings.scaleFact, settings.scaleFact, 1));
                 //dunno what this does, but I trust in the stolen codes
                 lineMaterial.SetPass(0);
 
@@ -238,7 +238,7 @@ namespace VesselView
                     {
                         Mesh mesh = meshF.mesh;
                         //create the trans. matrix for this mesh (also update the bounds)
-                        Matrix4x4 transMatrix = genTransMatrix(meshF.transform, settings.ship);
+                        Matrix4x4 transMatrix = genTransMatrix(meshF.transform, settings.ship,false);
                         updateMinMax(mesh.bounds, transMatrix, ref minVec, ref maxVec);
                         transMatrix = scrnMatrix * transMatrix;
                         //now render it
@@ -257,7 +257,7 @@ namespace VesselView
                     //luckily, I can apparently ask them to do all the work for me
                     smesh.BakeMesh(bakedMesh);
                     //create the trans. matrix for this mesh (also update the bounds)
-                    Matrix4x4 transMatrix = genTransMatrix(part.transform, settings.ship);
+                    Matrix4x4 transMatrix = genTransMatrix(part.transform, settings.ship,false);
                     updateMinMax(bakedMesh.bounds, transMatrix, ref minVec, ref maxVec);
                     transMatrix = scrnMatrix * transMatrix;
                     //now render it
@@ -265,14 +265,49 @@ namespace VesselView
                 }
                 
             }
-            //if(settings.partSelectMode & settings.partSelectCenterPart)
-            //finally, update the vessel "bounding box"
-            if (minVecG.x > minVec.x) minVecG.x = minVec.x;
-            if (minVecG.y > minVec.y) minVecG.y = minVec.y;
-            if (minVecG.z > minVec.z) minVecG.z = minVec.z;
-            if (maxVecG.x < maxVec.x) maxVecG.x = maxVec.x;
-            if (maxVecG.y < maxVec.y) maxVecG.y = maxVec.y;
-            if (maxVecG.z < maxVec.z) maxVecG.z = maxVec.z;
+            if (settings.partSelectMode & settings.selectionCenter) {
+                if (settings.selectedPart != null) {
+                    if (part == settings.selectedPart)
+                    {
+                        //finally, update the vessel "bounding box"
+                        if (minVecG.x > minVec.x) minVecG.x = minVec.x;
+                        if (minVecG.y > minVec.y) minVecG.y = minVec.y;
+                        if (minVecG.z > minVec.z) minVecG.z = minVec.z;
+                        if (maxVecG.x < maxVec.x) maxVecG.x = maxVec.x;
+                        if (maxVecG.y < maxVec.y) maxVecG.y = maxVec.y;
+                        if (maxVecG.z < maxVec.z) maxVecG.z = maxVec.z;
+                    }
+                    else if (settings.selectionSymmetry)
+                    {
+                        foreach (Part symPart in settings.selectedPart.symmetryCounterparts)
+                        {
+                            if (part == symPart)
+                            {
+                                //finally, update the vessel "bounding box"
+                                if (minVecG.x > minVec.x) minVecG.x = minVec.x;
+                                if (minVecG.y > minVec.y) minVecG.y = minVec.y;
+                                if (minVecG.z > minVec.z) minVecG.z = minVec.z;
+                                if (maxVecG.x < maxVec.x) maxVecG.x = maxVec.x;
+                                if (maxVecG.y < maxVec.y) maxVecG.y = maxVec.y;
+                                if (maxVecG.z < maxVec.z) maxVecG.z = maxVec.z;
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+            }
+            else
+            {
+                //finally, update the vessel "bounding box"
+                if (minVecG.x > minVec.x) minVecG.x = minVec.x;
+                if (minVecG.y > minVec.y) minVecG.y = minVec.y;
+                if (minVecG.z > minVec.z) minVecG.z = minVec.z;
+                if (maxVecG.x < maxVec.x) maxVecG.x = maxVec.x;
+                if (maxVecG.y < maxVec.y) maxVecG.y = maxVec.y;
+                if (maxVecG.z < maxVec.z) maxVecG.z = maxVec.z;
+            }
+
             //and draw a box around the part (later)
             rectQueue.Enqueue(new ViewerConstants.RectColor(new Rect((minVec.x), (minVec.y), (maxVec.x - minVec.x), (maxVec.y - minVec.y)), boxColor));
         }
@@ -332,8 +367,8 @@ namespace VesselView
         /// <param name="screenMatrix">Screen transformation matrix</param>
         private void renderLine(float x1, float y1, float x2, float y2, Matrix4x4 screenMatrix)
         {
-            Vector3 v1 = screenMatrix.MultiplyPoint3x4(new Vector3(x1, y1, 0.01f));
-            Vector3 v2 = screenMatrix.MultiplyPoint3x4(new Vector3(x2, y2, 0.01f));
+            Vector3 v1 = screenMatrix.MultiplyPoint3x4(new Vector3(x1, y1, 0.1f));
+            Vector3 v2 = screenMatrix.MultiplyPoint3x4(new Vector3(x2, y2, 0.1f));
             GL.Vertex(v1);
             GL.Vertex(v2);
         }
@@ -378,7 +413,7 @@ namespace VesselView
         /// <param name="meshTrans">Mesh matrix</param>
         /// <param name="vessel">Active vessel</param>
         /// <returns></returns>
-        private Matrix4x4 genTransMatrix(Transform meshTrans, Vessel vessel)
+        private Matrix4x4 genTransMatrix(Transform meshTrans, Vessel vessel, bool zeroFlatter)
         {
             //the mesh transform matrix in local space (which is what we want)
             //is essentialy its world transform matrix minus the transformations
@@ -415,7 +450,14 @@ namespace VesselView
                     meshTransMatrix = transformTemp.transform.localToWorldMatrix * meshTransMatrix;
                     break;
             }
-            Matrix4x4 FLATTER = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(1, 1, 0.00001f));
+            Matrix4x4 FLATTER;
+            if (zeroFlatter)
+            {
+                FLATTER = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(1, 1, 0));
+            }
+            else {
+                FLATTER = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(1, 1, 0.001f));
+            }
             //scale z by zero to flatten and prevent culling
             meshTransMatrix = FLATTER * meshTransMatrix;
             return meshTransMatrix;
@@ -470,8 +512,9 @@ namespace VesselView
 
         private Color getPartColorSelectMode(Part part, ViewerSettings settings) {
             Color darkGreen = Color.green;
-            darkGreen.g = 0.7f;
-            
+            darkGreen.g = 0.6f;
+            darkGreen.r = 0.3f;
+            darkGreen.b = 0.3f;
             Part selectedPart = settings.selectedPart;
             if (selectedPart == null) return Color.red;
             if (part == selectedPart) return Color.green;
