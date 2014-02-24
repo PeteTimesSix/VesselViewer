@@ -1,25 +1,21 @@
 bugs:
 
-fix pWings
-fix Infernal robotics?
-clearing on text change
-reload
+clearing on text change (prolly need to use RPM values)
+reload (semifixed, need persistence for proper fix)
 linux issue?
-Relative to ground plane
+Relative to ground plane (haha, no)
 
 features:
 
 persistence
 moduleManager
 part resource consumption/production?
-right click menu
 display target vessel
 Custom rotation plane
-Stress color mode
-Part selector, resource display
+Stress color mode (apparently forces are not exposed in unity, alas)
 show up in editor?
 custom color modes
 
 check:
 
-performance on giants
+performance on giants (...someone would have complained by now right)
