@@ -15,6 +15,7 @@ Custom rotation plane
 Stress color mode (apparently forces are not exposed in unity, alas)
 show up in editor?
 custom color modes
+action group coloring
 
 check:
 
