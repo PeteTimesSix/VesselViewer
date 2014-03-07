@@ -9,7 +9,6 @@ namespace VesselView
         public int colorModeBox = (int)ViewerConstants.COLORMODE.HIDE;
         public bool colorModeMeshDull = true;
         public bool colorModeBoxDull = false;
-
         public bool centerOnRootH = true;
         public bool centerOnRootV = false;
         public bool centerRescale = true;
@@ -18,6 +17,8 @@ namespace VesselView
         public int drawPlane = 0;
         public int scalePos = 0;
         public float scaleFact = 5;
+        public float scrOffX = 0;
+        public float scrOffY = 0;
 
         public Vessel ship;
 

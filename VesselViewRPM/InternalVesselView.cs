@@ -10,6 +10,7 @@ namespace JSI.Handlers
 {
     class InternalVesselView : InternalModule
     {
+        //RPM-related fields
         [KSPField]
         public string pageTitle = "-------------Vessel Viewer--------------";
         [KSPField]
@@ -23,12 +24,47 @@ namespace JSI.Handlers
         [KSPField]
         public int buttonHome = 4;
 
+        //optional configuration fields
+        //(you hear that? thats the sound of every fiber of programmer
+        //knowledge in me screaming YOURE WASTING MEMORY YOU LUNATIC)
+        [KSPField]
+        private int colorModeMesh = (int)ViewerConstants.COLORMODE.NONE;
+        [KSPField]
+        private int colorModeBox = (int)ViewerConstants.COLORMODE.HIDE;
+        [KSPField]
+        private bool colorModeMeshDull = true;
+        [KSPField]
+        private bool colorModeBoxDull = false;
+        [KSPField]
+        private bool centerOnRootH = true;
+        [KSPField]
+        private bool centerOnRootV = false;
+        [KSPField]
+        private bool autoCenterMode = true;
+        [KSPField]
+        private bool centeringModeRescale = true;
+        [KSPField]
+        private float scaleFactor = 5;
+        [KSPField]
+        public float scrOffX = 0;
+        [KSPField]
+        public float scrOffY = 0;
+        [KSPField]
+        public bool partSelectMode = false;
+        [KSPField]
+        public bool selectionSymmetry = true;
+        [KSPField]
+        public bool centerSelection = false;
+
         private bool ready = false;
         
         private VesselViewer viewer;
         private ViewerSettings settings;
 
         private IVViewMenu activeMenu;
+
+        private bool forceRedraw = false;
+        private bool textChanged = false;
 
         public string ShowMenu(int width, int height)
         {
@@ -41,12 +77,18 @@ namespace JSI.Handlers
                 activeMenu.printMenu(ref builder, width, height);
             }
             //MonoBehaviour.print("text draw call done");
+            textChanged = true;
             return builder.ToString();
         }
 
 
         public bool RenderViewer(RenderTexture screen, float cameraAspect)
         {
+            if (forceRedraw & textChanged) {
+                forceRedraw = false;
+                textChanged = false;
+                viewer.forceRedraw();
+            }
             //MonoBehaviour.print("screen draw call");
             viewer.drawCall(screen);
             //MonoBehaviour.print("screen draw call done");
@@ -93,8 +135,7 @@ namespace JSI.Handlers
             {
                
             }
-
-            viewer.forceRedraw();
+            forceRedraw = true;
         }
 
         public void PageActive(bool active, int pageNumber)
@@ -107,8 +148,29 @@ namespace JSI.Handlers
         {
             viewer = new VesselViewer();
             settings = viewer.settings;
+            setupConfig();
             setupMenus();
             ready = true;
+        }
+
+        private void setupConfig() {
+            //Im not entirely sure why I still insist on keeping 
+            //the RPM version and the standalone separate
+            //but as long as I do, I have to keep the configuration plugin-side
+            settings.colorModeMesh = colorModeMesh;
+            settings.colorModeBox = colorModeBox;
+            settings.colorModeMeshDull = colorModeMeshDull;
+            settings.colorModeBoxDull = colorModeBoxDull;
+            settings.centerOnRootH = centerOnRootH;
+            settings.centerOnRootV = centerOnRootV;
+            settings.autoCenter = autoCenterMode;
+            settings.centerRescale = centeringModeRescale;
+            settings.scaleFact = scaleFactor;
+            settings.scrOffX = scrOffX;
+            settings.scrOffY = scrOffY;
+            settings.partSelectMode = partSelectMode;
+            settings.selectionSymmetry = selectionSymmetry;
+            settings.selectionCenter = centerSelection;
         }
 
 

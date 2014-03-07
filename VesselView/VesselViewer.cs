@@ -8,8 +8,6 @@ namespace VesselView
     {
 
         //centerised... center
-        private int scrOffX = 512;
-        private int scrOffY = 512;
         //bounding box for the whole vessel, essentially
         private Vector3 minVecG = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
         private Vector3 maxVecG = new Vector3(float.MinValue, float.MinValue, float.MinValue);
@@ -39,21 +37,17 @@ namespace VesselView
         private static Mesh bakedMesh = new Mesh();
 
         public void nilOffset(int width, int height) {
-            scrOffX = width / 2;
-            scrOffY = height / 2;
+            settings.scrOffX = width / 2;
+            settings.scrOffY = height / 2;
         }
 
         public void manuallyOffset(int offsetX, int offsetY) {
-            scrOffX += offsetX;
-            scrOffY += offsetY;
+            settings.scrOffX += offsetX;
+            settings.scrOffY += offsetY;
         }
 
         public void forceRedraw() {
-            // ...what? it works.
-            //Im assuming the refresh rate of text in RPM
-            //is lower than the background (the config file seems
-            //to support this, so we delay by a tiny bit
-            lastUpdate = Time.time - 0.8f;
+            lastUpdate = Time.time - 1f;
         }
 
         public void drawCall(RenderTexture screen) {
@@ -130,7 +124,7 @@ namespace VesselView
                 //turn on wireframe, since triangles would get filled othershipwise
                 GL.wireframe = true;
                 //set up the screen position and scaling matrix
-                Matrix4x4 matrix = Matrix4x4.TRS(new Vector3(scrOffX, scrOffY, 0), Quaternion.identity, new Vector3(settings.scaleFact, settings.scaleFact, 1));
+                Matrix4x4 matrix = Matrix4x4.TRS(new Vector3(settings.scrOffX, settings.scrOffY, 0), Quaternion.identity, new Vector3(settings.scaleFact, settings.scaleFact, 1));
                 //dunno what this does, but I trust in the stolen codes
                 lineMaterial.SetPass(0);
 
@@ -499,8 +493,8 @@ namespace VesselView
             }
             //to centerise, we need to move the center point of the vessel render
             //into the center of the screen
-            scrOffX = screenWidth/2 - (int)((minVecG.x + xDiff / 2) * settings.scaleFact);
-            scrOffY = screenHeight/2 - (int)((minVecG.y + yDiff / 2) * settings.scaleFact);
+            settings.scrOffX = screenWidth / 2 - (int)((minVecG.x + xDiff / 2) * settings.scaleFact);
+            settings.scrOffY = screenHeight / 2 - (int)((minVecG.y + yDiff / 2) * settings.scaleFact);
         }
 
         private bool partIsOnWayToRoot(Part part, Part leaf, Part root) {
