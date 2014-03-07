@@ -153,7 +153,7 @@ namespace JSI.Handlers
             ready = true;
         }
 
-        private void setupConfig() {
+        public void setupConfig() {
             //Im not entirely sure why I still insist on keeping 
             //the RPM version and the standalone separate
             //but as long as I do, I have to keep the configuration plugin-side
