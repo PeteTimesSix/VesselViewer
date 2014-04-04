@@ -44,6 +44,8 @@ namespace JSI.Handlers
         [KSPField]
         private bool centeringModeRescale = true;
         [KSPField]
+        private bool latencyMode = true;
+        [KSPField]
         private float scaleFactor = 5;
         [KSPField]
         public float scrOffX = 0;
@@ -165,6 +167,7 @@ namespace JSI.Handlers
             settings.centerOnRootV = centerOnRootV;
             settings.autoCenter = autoCenterMode;
             settings.centerRescale = centeringModeRescale;
+            settings.latency = latencyMode;
             settings.scaleFact = scaleFactor;
             settings.scrOffX = scrOffX;
             settings.scrOffY = scrOffY;
