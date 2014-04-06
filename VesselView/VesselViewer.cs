@@ -316,10 +316,10 @@ namespace VesselView
         private void renderMesh(int[] triangles, Vector3[] vertices, Matrix4x4 transMatrix, Color color)
         {
             //setup GL
-            GL.Color(color);
             GL.PushMatrix();
             GL.MultMatrix(transMatrix);
             GL.Begin(GL.TRIANGLES);
+            GL.Color(color);
             //and draw the triangles
             //TODO: Maybe it doesnt have to be done in immediate mode?
             //Unity GL doesnt seem to expose much, though.
@@ -342,8 +342,8 @@ namespace VesselView
         private void renderRect(Rect rect, Matrix4x4 screenMatrix, Color color)
         {
             //setup GL, then render the lines
-            GL.Color(color);
             GL.Begin(GL.LINES);
+            GL.Color(color);
             renderLine(rect.xMin, rect.yMin, rect.xMax, rect.yMin, screenMatrix);
             renderLine(rect.xMax, rect.yMin, rect.xMax, rect.yMax, screenMatrix);
             renderLine(rect.xMax, rect.yMax, rect.xMin, rect.yMax, screenMatrix);
