@@ -11,16 +11,29 @@ namespace VesselView
         public bool colorModeBoxDull = false;
         public bool centerOnRootH = true;
         public bool centerOnRootV = false;
-        public bool centerRescale = true;
+        public bool displayCOM = true;
+        public bool displayEngines = true;
+        //public bool displayCOP = true;
+
+        public int centerRescale = (int)ViewerConstants.RESCALEMODE.INCR;
+
         public bool autoCenter = true;
-        public bool latency = true;
+        public bool latency = false;
         public int drawPlane = 0;
         public int scalePos = 0;
         public float scaleFact = 5;
         public float scrOffX = 0;
         public float scrOffY = 0;
+        public int spinAxis = (int)ViewerConstants.AXIS.Y;
+        public int spinSpeed = 0;
 
-        public Vessel ship;
+        public int centerRescaleMAX = ViewerConstants.RESCALEMODES.Length;
+        public int colorModeMeshMAX = ViewerConstants.COLORMODES.Length;
+        public int colorModeBoxMAX = ViewerConstants.COLORMODES.Length;
+        public int drawPlaneMAX = ViewerConstants.PLANES.Length;
+        public int scalePosMAX = ViewerConstants.SCALE_FACTS.Length;
+        public int spinAxisMAX = ViewerConstants.AXES.Length;
+        public int spinSpeedMAX = ViewerConstants.SPIN_SPEEDS.Length;
 
         //is window displayed?
         public bool screenVisible = false;
@@ -33,6 +46,8 @@ namespace VesselView
         public Part subselectedPart;
         public bool selectionSymmetry = true;
         public bool selectionCenter = false;
+
+        public Vessel ship;
 
         /*
          * NULL - nothing
@@ -55,10 +70,10 @@ namespace VesselView
          * PSCEN - zoom in on selected part
          */
 
-        public enum IDs 
+        /*public enum IDs 
         {
             NULL, CMM, CMB, CORH, CORV, CRE, AUTC, LAT, DRP, SCP, SCA, SV, CSV, MDULL, BDULL, PSMOD, PSSYM, PSCEN
-        }
+        }*/
 
         /*
          * NULL - no change (ignores changeValue)
@@ -70,10 +85,18 @@ namespace VesselView
          * BINV - inverts a boolean property (ignores changeValue)
          * SINC - smart increment - increases by one and loops to zero on reaching over max value (ignores changeValue)
          * */
+
+        //well this is all absolutely insane.
+        //NO NO NO NO NO.
+        //NO.
+
+        /*
         public enum CHANGEMODES
         {
             NULL, SET, ADD, SUB, MULT, BSET, BINV, SINC
         }
+
+        
 
         /// <summary>
         /// sets a property. silently fails on non-viable properties,
@@ -259,50 +282,55 @@ namespace VesselView
             }
         }
 
+         * */
+        
         /// <summary>
         /// Returns a meaningful description of a given property
         /// </summary>
         /// <param name="propertyID"></param>
         /// <returns></returns>
-        public string getSmartPropertyByID(int propertyID){
-            switch (propertyID) 
+        public string getPropertyDesc(string propertyName){
+
+            switch (propertyName) 
             {
-                case (int)IDs.NULL:
-                    return "";
-                case (int)IDs.CMM:
+                case "colorModeMesh":
                     return ViewerConstants.COLORMODES[colorModeMesh];
-                case (int)IDs.CMB:
+                case "colorModeBox":
                     return ViewerConstants.COLORMODES[colorModeBox];
-                case (int)IDs.CORH:
+                case "centerOnRootH":
                     return boolAsString(centerOnRootH);
-                case (int)IDs.CORV:
+                case "centerOnRootV":
                     return boolAsString(centerOnRootV);
-                case (int)IDs.CRE:
-                    return boolAsString(centerRescale);
-                case (int)IDs.AUTC:
+                case "displayCOM":
+                    return boolAsString(displayCOM);
+                case "displayEngines":
+                    return boolAsString(displayEngines);
+                /*case "displayCOP":
+                    return boolAsString(displayCOP);*/
+                case "centerRescale":
+                    return ViewerConstants.RESCALEMODES[centerRescale];
+                case "autoCenter":
                     return boolAsString(autoCenter);
-                case (int)IDs.LAT:
+                case "latency":
                     return boolAsString(latency);
-                case (int)IDs.DRP:
+                case "drawPlane":
                     return ViewerConstants.PLANES[drawPlane];
-                case (int)IDs.SCP:
+                case "scalePos":
                     return ViewerConstants.SCALE_FACTS[scalePos]+" predefined";
-                case (int)IDs.SCA:
-                    return "" + scaleFact;
-                case (int)IDs.SV:
-                    return "" + screenVisible;
-                case (int)IDs.CSV:
-                    return "" + configScreenVisible;
-                case (int)IDs.BDULL:
+                case "colorModeBoxDull":
                     return boolAsString(colorModeBoxDull);
-                case (int)IDs.MDULL:
+                case "colorModeMeshDull":
                     return boolAsString(colorModeMeshDull);
-                case (int)IDs.PSMOD:
+                case "partSelectMode":
                     return boolAsString(partSelectMode);
-                case (int)IDs.PSSYM:
+                case "selectionSymmetry":
                     return boolAsString(selectionSymmetry);
-                case (int)IDs.PSCEN:
+                case "selectionCenter":
                     return boolAsString(selectionCenter);
+                case "spinAxis":
+                    return ViewerConstants.AXES[spinAxis];
+                case "spinSpeed":
+                    return ViewerConstants.SPIN_SPEEDS[spinSpeed];
             }
             return "ERROR";
         }
@@ -314,7 +342,9 @@ namespace VesselView
         private string boolAsString(bool boolean) {
             return (boolean) ? "On" : "Off";
         }
+        
 
+        /*
         public string getPropertyByID(int propertyID)
         {
             switch (propertyID)
@@ -348,6 +378,7 @@ namespace VesselView
             }
             return "ERROR";
         }
-
+         * */
+        
     }
 }

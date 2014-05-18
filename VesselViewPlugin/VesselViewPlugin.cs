@@ -126,7 +126,8 @@ namespace VesselView
                     }
                     if (GUILayout.Button("Autorescale:" + settings.centerRescale, mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
                     {
-                        settings.centerRescale = !settings.centerRescale;
+                        settings.centerRescale++;
+                        if (settings.centerRescale == ViewerConstants.RESCALEMODES.Length) settings.centerRescale = 0;
                     }
                 }
 

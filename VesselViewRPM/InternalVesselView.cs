@@ -42,9 +42,9 @@ namespace JSI.Handlers
         [KSPField]
         private bool autoCenterMode = true;
         [KSPField]
-        private bool centeringModeRescale = true;
+        private int centeringModeRescaleNew = (int)ViewerConstants.RESCALEMODE.CLOSE;
         [KSPField]
-        private bool latencyMode = true;
+        private bool latencyMode = false;
         [KSPField]
         private float scaleFactor = 5;
         [KSPField]
@@ -57,6 +57,14 @@ namespace JSI.Handlers
         public bool selectionSymmetry = true;
         [KSPField]
         public bool centerSelection = false;
+        [KSPField]
+        public int spinAxis = (int)ViewerConstants.AXIS.Y;
+        [KSPField]
+        public int spinSpeed = 0;
+        [KSPField]
+        public bool displayEngines = true;
+        [KSPField]
+        public bool displayCOM = true;
 
         private bool ready = false;
         
@@ -166,7 +174,7 @@ namespace JSI.Handlers
             settings.centerOnRootH = centerOnRootH;
             settings.centerOnRootV = centerOnRootV;
             settings.autoCenter = autoCenterMode;
-            settings.centerRescale = centeringModeRescale;
+            settings.centerRescale = centeringModeRescaleNew;
             settings.latency = latencyMode;
             settings.scaleFact = scaleFactor;
             settings.scrOffX = scrOffX;
@@ -174,50 +182,38 @@ namespace JSI.Handlers
             settings.partSelectMode = partSelectMode;
             settings.selectionSymmetry = selectionSymmetry;
             settings.selectionCenter = centerSelection;
+            settings.spinAxis = spinAxis;
+            settings.spinSpeed = spinSpeed;
+            settings.displayEngines = displayEngines;
+            settings.displayCOM = displayCOM;
         }
-
-
-
-        /*
-         * NULL - nothing
-         * CMM - mesh color mode
-         * CMB - bounds color mode
-         * CORH - center on root horizontal
-         * CORV - center on root vertical
-         * CRE - automatic centering rescaling
-         * AUTC - automatic centering 
-         * LAT - latency mode (one redraw per second)
-         * DRP - draw plane (XY, XZ, Real, Relative, and so on)
-         * SCP - scale list position
-         * SCA - scaling factor
-         * SV - is screen visible
-         * CSV - is config screen/menu visible
-         */
 
         private void setupMenus() {
             //well I was gonna have to hardcode this SOMEWHERE.
             //int propertyToChange, int propertyToPrint, bool valueDirect, int value, int changeMode
             VViewSimpleMenuItem[] DMMItems = {
-                new VViewSimpleMenuItem("Bounds color code:",settings,(int)ViewerSettings.IDs.CMB,(int)ViewerSettings.IDs.CMB,true,0,(int)ViewerSettings.CHANGEMODES.SINC),
-                new VViewSimpleMenuItem("Mesh color mode:",settings,(int)ViewerSettings.IDs.CMM,(int)ViewerSettings.IDs.CMM,true,0,(int)ViewerSettings.CHANGEMODES.SINC),
-                new VViewSimpleMenuItem("Dull bounds:",settings,(int)ViewerSettings.IDs.BDULL,(int)ViewerSettings.IDs.BDULL,true,0,(int)ViewerSettings.CHANGEMODES.BINV),
-                new VViewSimpleMenuItem("Dull mesh:",settings,(int)ViewerSettings.IDs.MDULL,(int)ViewerSettings.IDs.MDULL,true,0,(int)ViewerSettings.CHANGEMODES.BINV),
+                new VViewSimpleMenuItem("Bounds color code:",settings,"colorModeBox","colorModeBox"),
+                new VViewSimpleMenuItem("Mesh color mode:",settings,"colorModeMesh","colorModeMesh"),
+                new VViewSimpleMenuItem("Dull bounds:",settings,"colorModeBoxDull","colorModeBoxDull"),
+                new VViewSimpleMenuItem("Dull mesh:",settings,"colorModeMeshDull","colorModeMeshDull"),
+                new VViewSimpleMenuItem("Spin axis:",settings,"spinAxis","spinAxis"),
+                new VViewSimpleMenuItem("Spin speed:",settings,"spinSpeed","spinSpeed"),
                                       };
             VViewSimpleMenu dispModeMenu = new VViewSimpleMenu(DMMItems, "Display modes");
 
             VViewMenuPartSelector partSelectMenu = new VViewMenuPartSelector(settings);
             VViewSimpleMenuItem[] PCMItems = {
-                new VViewSimpleMenuItem("Latency mode:",settings,(int)ViewerSettings.IDs.LAT,(int)ViewerSettings.IDs.LAT,true,0,(int)ViewerSettings.CHANGEMODES.BINV),
-                new VViewSimpleMenuItem("Autocentering:",settings,(int)ViewerSettings.IDs.AUTC,(int)ViewerSettings.IDs.AUTC,true,0,(int)ViewerSettings.CHANGEMODES.BINV),
-                new VViewSimpleMenuItem("A.c. scaling:",settings,(int)ViewerSettings.IDs.CRE,(int)ViewerSettings.IDs.CRE,true,0,(int)ViewerSettings.CHANGEMODES.BINV),
-                new VViewSimpleMenuItem("Hor. pod center:",settings,(int)ViewerSettings.IDs.CORH,(int)ViewerSettings.IDs.CORH,true,0,(int)ViewerSettings.CHANGEMODES.BINV),
-                new VViewSimpleMenuItem("Ver. pod center:",settings,(int)ViewerSettings.IDs.CORV,(int)ViewerSettings.IDs.CORV,true,0,(int)ViewerSettings.CHANGEMODES.BINV),
-                new VViewSimpleMenuItem("Zoom on selection:",settings,(int)ViewerSettings.IDs.PSCEN,(int)ViewerSettings.IDs.PSCEN,true,0,(int)ViewerSettings.CHANGEMODES.BINV),
-                new VViewSimpleMenuItem("Affect symmetry:",settings,(int)ViewerSettings.IDs.PSSYM,(int)ViewerSettings.IDs.PSSYM,true,0,(int)ViewerSettings.CHANGEMODES.BINV),
+                new VViewSimpleMenuItem("Latency mode:",settings,"latency","latency"),
+                new VViewSimpleMenuItem("Autocentering:",settings,"autoCenter","autoCenter"),
+                new VViewSimpleMenuItem("A.c. scaling:",settings,"centerRescale","centerRescale"),
+                new VViewSimpleMenuItem("Hor. pod center:",settings,"centerOnRootH","centerOnRootH"),
+                new VViewSimpleMenuItem("Ver. pod center:",settings,"centerOnRootV","centerOnRootV"),
+                new VViewSimpleMenuItem("Zoom on selection:",settings,"selectionCenter","selectionCenter"),
+                new VViewSimpleMenuItem("Affect symmetry:",settings,"selectionSymmetry","selectionSymmetry"),
                                       };
             VViewSimpleMenu partSelectConfigMenu = new VViewSimpleMenu(PCMItems, "P. sel. config");
             VViewSimpleMenuItem[] MAMItems = {
-                new VViewSimpleMenuItem("Plane:",settings,(int)ViewerSettings.IDs.DRP,(int)ViewerSettings.IDs.DRP,true,0,(int)ViewerSettings.CHANGEMODES.SINC),
+                new VViewSimpleMenuItem("Plane:",settings,"drawPlane","drawPlane"),
                 new VViewSimpleMenuItem("Display modes",dispModeMenu),
                 new VViewSimpleMenuItem("Part selector",partSelectMenu),
                 new VViewSimpleMenuItem("Config",partSelectConfigMenu),

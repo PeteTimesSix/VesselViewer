@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using VesselView;
+using UnityEngine;
 
 namespace VesselViewRPM
 {
@@ -10,13 +12,21 @@ namespace VesselViewRPM
     {
         public string label;
         private ViewerSettings settings;
-        private int propertyToChangeID = (int)ViewerSettings.IDs.NULL;
-        private int propertyToPrintID = (int)ViewerSettings.IDs.NULL;
+
+        private string targetProperty;
+        private string displayProperty;
+
+        //if true, set direct value, else cycle through options
+        private bool setValue = false;
+        private int value;
+
+        //private int propertyToChangeID = (int)ViewerSettings.IDs.NULL;
+        //private int propertyToPrintID = (int)ViewerSettings.IDs.NULL;
         //if true, just change directly
         //if false, change by the value of the property ID'd
-        private bool changeValueDirect = true;
-        private int changeValue = 0;
-        private int changeMode = (int)ViewerSettings.CHANGEMODES.NULL;
+        //private bool changeValueDirect = true;
+        //private int changeValue = 0;
+        //private int changeMode = (int)ViewerSettings.CHANGEMODES.NULL;
         private IVViewMenu menuToChangeTo = null;
 
         public VViewSimpleMenuItem(string label) {
@@ -28,15 +38,25 @@ namespace VesselViewRPM
             this.menuToChangeTo = menuTarget;
         }
 
-        public VViewSimpleMenuItem(string label, VesselView.ViewerSettings settings, int propertyToChange, int propertyToPrint, bool valueDirect, int value, int changeMode)
+        public VViewSimpleMenuItem(string label, IVViewMenu menuTarget, int directValue)
+        {
+            this.label = label;
+            this.menuToChangeTo = menuTarget;
+            setValue = true;
+            value = directValue;
+        }
+
+        public VViewSimpleMenuItem(string label, VesselView.ViewerSettings settings, string propertyToChange, string propertyToPrint/*, bool valueDirect, int value*/)
         {
             this.label = label;
             this.settings = settings;
-            this.propertyToChangeID = propertyToChange;
-            this.propertyToPrintID = propertyToPrint;
-            this.changeValueDirect = valueDirect;       
-            this.changeValue = value;
-            this.changeMode = changeMode;
+            this.targetProperty = propertyToChange;
+            this.displayProperty = propertyToPrint;
+            //this.propertyToChangeID = propertyToChange;
+            //this.propertyToPrintID = propertyToPrint;
+            //this.changeValueDirect = valueDirect;       
+            //this.changeValue = value;
+            //this.changeMode = changeMode;
         }
 
         /// <summary>
@@ -45,17 +65,43 @@ namespace VesselViewRPM
         /// <returns>Menu to change to, null if stay</returns>
         internal IVViewMenu click()
         {
+            //MonoBehaviour.print("CLICK on " + label);
+            //MonoBehaviour.print("looking for " + targetProperty);
+
             if (settings != null) {
-                if (changeValueDirect)
+                FieldInfo fieldInfo = settings.GetType().GetField(targetProperty);
+                //MonoBehaviour.print("fieldInfo> " + fieldInfo);
+                object value = fieldInfo.GetValue(settings);
+                //MonoBehaviour.print("value> " + value);
+                if (value is bool) 
                 {
-                    settings.setPropertyByID(propertyToChangeID, changeMode, changeValue);
+                    fieldInfo.SetValue(settings, !(bool)(value));
+                }
+                else if (value is int) 
+                {
+                    if (setValue) 
+                    {
+                        fieldInfo.SetValue(settings, this.value);
+                    }
+                    else 
+                    {
+                        FieldInfo fieldInfoMax = settings.GetType().GetField(targetProperty + "MAX");
+                        int valNum = (int)(value) + 1;
+                        if (valNum >= (int)(fieldInfoMax.GetValue(settings))) valNum = 0;
+                        fieldInfo.SetValue(settings, valNum);
+                    }
+                    
+                }
+                /*if (changeValueDirect)
+                {
+                    //settings.setPropertyByID(propertyToChangeID, changeMode, changeValue);
                 }
                 else
                 {
-                    int value;
-                    int.TryParse(settings.getPropertyByID(changeValue), out value);
-                    settings.setPropertyByID(propertyToChangeID, changeMode, value);
-                }
+                    //int value;
+                    //int.TryParse(settings.getPropertyByID(changeValue), out value);
+                    //settings.setPropertyByID(propertyToChangeID, changeMode, value);
+                }*/
             }          
             return menuToChangeTo;
         }
@@ -67,7 +113,8 @@ namespace VesselViewRPM
             }
             else 
             {
-                return label + settings.getSmartPropertyByID(propertyToPrintID);
+                return label + settings.getPropertyDesc(displayProperty);
+                //return label + settings.getSmartPropertyByID(propertyToPrintID);
             }
         }
     }

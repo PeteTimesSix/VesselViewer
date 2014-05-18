@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
 
 namespace VesselView
@@ -137,11 +138,29 @@ namespace VesselView
                         renderPart(next, matrix);
                     }
                 }
+                //now render engine exhaust indicators
+                if (settings.displayEngines)
+                {
+                    try
+                    {
+                        renderEngineThrusts(matrix);
+                    }
+                    catch (Exception e) { MonoBehaviour.print("Exception in engine thrusts"); }
+                }
                 //now render the bounding boxes (so theyre on top)
                 if (settings.colorModeBox != (int)ViewerConstants.COLORMODE.HIDE)
                 {
                     renderRects(matrix);
                 }
+                //now render center of mass
+                if (settings.displayCOM) 
+                {
+                    renderCOM(matrix);
+                }
+                /*if (settings.displayCOP)
+                {
+                    renderCOP(matrix);
+                }*/
                 //then set the max stages (for the stage coloring)
                 stagesLastTime = stagesThisTimeMax;
                 //undo stuff
@@ -150,6 +169,145 @@ namespace VesselView
                 RenderTexture.active = backupRenderTexture;
             }
         }
+
+        private void renderEngineThrusts(Matrix4x4 screenMatrix)
+        {
+            foreach (Part part in settings.ship.parts) 
+            {
+                if (part.Modules.Contains("ModuleEngines")) 
+                {
+                    PartModule engineModule = part.Modules["ModuleEngines"];
+                    string transformName = "";
+                    foreach (BaseField fieldInList in engineModule.Fields)
+                    {
+                        if (fieldInList.name.Equals("thrustVectorTransformName"))
+                        {
+                            transformName = (string)fieldInList.GetValue(engineModule);
+                            break;
+                        }
+                    }
+                    if (transformName.Equals("")) continue;
+                    //MonoBehaviour.print("Found an engine with a transform");
+                    Transform thrustTransform = part.FindModelTransform(transformName);
+                    Matrix4x4 transMatrix = genTransMatrix(thrustTransform, settings.ship, true);
+                    float scale = 0;
+                    float maxThrust = float.PositiveInfinity;
+                    foreach (BaseField fieldInList in engineModule.Fields)
+                    {
+                        if (fieldInList.name.Equals("maxThrust"))
+                        {
+                            maxThrust = (float)fieldInList.GetValue(engineModule);
+                            break;
+                        }
+                    }
+                    foreach (BaseField fieldInList in engineModule.Fields)
+                    {
+                        if (fieldInList.name.Equals("finalThrust"))
+                        {
+                            scale = (float)fieldInList.GetValue(engineModule)/maxThrust;
+                            break;
+                        }
+                    }
+                    bool Found_LiquidFuel = false;
+                    bool Found_ElectricCharge = false;
+                    bool Found_IntakeAir = false;
+                    bool Found_XenonGas = false;
+                    bool Found_Oxidizer = false;
+                    bool Found_MonoPropellant = false;
+                    bool Deprived_LiquidFuel = false;
+                    bool Deprived_ElectricCharge = false;
+                    bool Deprived_IntakeAir = false;
+                    bool Deprived_XenonGas = false;
+                    bool Deprived_Oxidizer = false;
+                    bool Deprived_MonoPropellant = false;
+                    List<Propellant> propellants =  ((ModuleEngines)engineModule).propellants;
+                    //MonoBehaviour.print("Propellants for " + part.name);
+                    foreach (Propellant propellant in propellants)
+                    {
+                        //MonoBehaviour.print(propellant.name);
+                        if (propellant.name.Equals("LiquidFuel"))
+                        {
+                            Found_LiquidFuel = true;
+                            if (propellant.isDeprived) Deprived_LiquidFuel = true;
+                        }
+                        else if (propellant.name.Equals("Oxidizer"))
+                        {
+                            Found_Oxidizer = true;
+                            if (propellant.isDeprived) Deprived_Oxidizer = true;
+                        }
+                        else if (propellant.name.Equals("IntakeAir"))
+                        {
+                            Found_IntakeAir = true;
+                            if (propellant.isDeprived) Deprived_IntakeAir = true;
+                        }
+                        else if (propellant.name.Equals("MonoPropellant"))
+                        {
+                            Found_MonoPropellant = true;
+                            if (propellant.isDeprived) Deprived_MonoPropellant = true;
+                        }
+                        else if (propellant.name.Equals("XenonGas"))
+                        {
+                            Found_XenonGas = true;
+                            if (propellant.isDeprived) Deprived_XenonGas = true;
+                        }
+                        else if (propellant.name.Equals("ElectricCharge"))
+                        {
+                            Found_ElectricCharge = true;
+                            if (propellant.isDeprived) Deprived_ElectricCharge = true;
+                        }
+                    }
+                    //if online, render exhaust
+                    if (scale > 0.01f) 
+                    {
+                        //default to magenta
+                        Color color = Color.magenta;
+                            //liquid fuel engines
+                        if (Found_LiquidFuel & Found_Oxidizer) color = new Color(1, 0.5f, 0);
+                            //air breathing engines
+                        else if (Found_LiquidFuel & Found_IntakeAir) color = new Color(0.9f, 0.7f, 0.8f);
+                            //ion engines
+                        else if (Found_XenonGas & Found_ElectricCharge) color = new Color(0f, 0.5f, 1f);
+                            //monoprop engines
+                        else if (Found_MonoPropellant) color = new Color(0.9f, 0.9f, 0.9f);
+                        scale *= part.mass;
+                        renderCone(thrustTransform, scale, part.mass, screenMatrix, color);
+                    }
+                    //render icon
+                    float div = 6 / settings.scaleFact;
+                    Vector3 posStr = new Vector3();
+                    posStr = transMatrix.MultiplyPoint3x4(posStr);
+                    //out of fuel
+                    if ((Found_LiquidFuel & Deprived_LiquidFuel) | (Found_MonoPropellant & Deprived_MonoPropellant) | (Found_XenonGas & Deprived_XenonGas) | (Found_Oxidizer & Deprived_Oxidizer))
+                        renderIcon(new Rect(-div + posStr.x, -div + posStr.y, 2 * div, 2 * div), screenMatrix, Color.red, (int)ViewerConstants.ICONS.ENGINE_NOFUEL);
+                    else if ((Found_ElectricCharge & Deprived_ElectricCharge))
+                        renderIcon(new Rect(-div + posStr.x, -div + posStr.y, 2 * div, 2 * div), screenMatrix, Color.cyan, (int)ViewerConstants.ICONS.ENGINE_NOPOWER);
+                    else if ((Found_IntakeAir & Deprived_IntakeAir))
+                        renderIcon(new Rect(-div + posStr.x, -div + posStr.y, 2 * div, 2 * div), screenMatrix, Color.cyan, (int)ViewerConstants.ICONS.ENGINE_NOAIR);
+                    else if (scale >= 0.01f)
+                        renderIcon(new Rect(-div + posStr.x, -div + posStr.y, 2 * div, 2 * div), screenMatrix, new Color(1,0.5f,0), (int)ViewerConstants.ICONS.ENGINE_ACTIVE);
+                    else 
+                        {
+                            if(!((ModuleEngines)engineModule).isOperational)
+                                renderIcon(new Rect(-div + posStr.x, -div + posStr.y, 2 * div, 2 * div), screenMatrix, Color.yellow, (int)ViewerConstants.ICONS.ENGINE_INACTIVE);
+                            else
+                                renderIcon(new Rect(-div + posStr.x, -div + posStr.y, 2 * div, 2 * div), screenMatrix, Color.green, (int)ViewerConstants.ICONS.ENGINE_READY);
+                        }
+
+
+                    Vector3 v = new Vector3(0, 0, scale + part.mass);
+                    v = transMatrix.MultiplyPoint3x4(v);
+                    if (v.x < minVecG.x) minVecG.x = v.x;
+                    if (v.y < minVecG.y) minVecG.y = v.y;
+                    if (v.z < minVecG.z) minVecG.z = v.z;
+                    if (v.x > maxVecG.x) maxVecG.x = v.x;
+                    if (v.y > maxVecG.y) maxVecG.y = v.y;
+                    if (v.z > maxVecG.z) maxVecG.z = v.z;
+                    //renderIcon(new Rect(-div + posEnd.x, -div + posEnd.y, 2 * div, 2 * div), screenMatrix, Color.yellow, (int)ViewerConstants.ICONS.SQUARE_DIAMOND);
+                }
+            }
+        }
+
+
 
         /// <summary>
         /// Renders the part bounding boxes
@@ -166,6 +324,46 @@ namespace VesselView
 
         }
 
+
+        private void renderCOM(Matrix4x4 screenMatrix)
+        {
+            Vector3 COM = settings.ship.findLocalCenterOfMass();
+            //MonoBehaviour.print("COM>"+COM);
+            Matrix4x4 transMatrix = genTransMatrix(settings.ship.rootPart.transform, settings.ship, true);
+            //transMatrix = screenMatrix * transMatrix;
+            //now render it
+            COM = transMatrix.MultiplyPoint3x4(COM);
+            //MonoBehaviour.print("COM modified>" + COM);
+            float div = 6 / settings.scaleFact;
+            renderIcon(new Rect(-div + COM.x, -div + COM.y, 2 * div, 2 * div), screenMatrix, Color.magenta, (int)ViewerConstants.ICONS.SQUARE_DIAMOND);
+        }
+
+        private void renderCOP(Matrix4x4 screenMatrix)
+        {
+            Vector3 COP = settings.ship.findLocalCenterOfPressure();
+            //MonoBehaviour.print("COM>"+COM);
+            Matrix4x4 transMatrix = genTransMatrix(settings.ship.rootPart.transform, settings.ship, true);
+            //transMatrix = screenMatrix * transMatrix;
+            //now render it
+            COP = transMatrix.MultiplyPoint3x4(COP);
+            //MonoBehaviour.print("COM modified>" + COM);
+            float div = 6 / settings.scaleFact;
+            renderIcon(new Rect(-div + COP.x, -div + COP.y, 2 * div, 2 * div), screenMatrix, Color.cyan, (int)ViewerConstants.ICONS.SQUARE_DIAMOND);
+        }
+
+        private void renderMOI(Matrix4x4 screenMatrix)
+        {
+            Vector3 MOI = settings.ship.findLocalMOI();
+            //MonoBehaviour.print("COM>"+COM);
+            Matrix4x4 transMatrix = genTransMatrix(settings.ship.rootPart.transform, settings.ship, true);
+            //transMatrix = screenMatrix * transMatrix;
+            //now render it
+            MOI = transMatrix.MultiplyPoint3x4(MOI);
+            //MonoBehaviour.print("COM modified>" + COM);
+            float div = 6 / settings.scaleFact;
+            renderIcon(new Rect(-div + MOI.x, -div + MOI.y, 2 * div, 2 * div), screenMatrix, Color.yellow, (int)ViewerConstants.ICONS.SQUARE_DIAMOND);
+        }
+
         /// <summary>
         /// Renders a single part and adds all its children to the draw queue.
         /// Also adds its bounding box to the bounding box queue.
@@ -174,7 +372,6 @@ namespace VesselView
         /// <param name="scrnMatrix">Screen transform</param>
         private void renderPart(Part part, Matrix4x4 scrnMatrix)
         {
-
             //first off, add all the parts children to the queue
             foreach (Part child in part.children)
             {
@@ -183,7 +380,7 @@ namespace VesselView
                     partQueue.Enqueue(child);
                 }
             }
-
+            
             //get the appropriate colors
             Color partColor;
             Color boxColor;
@@ -244,7 +441,6 @@ namespace VesselView
             SkinnedMeshRenderer[] skinnedMeshes = (SkinnedMeshRenderer[])part.FindModelComponents<SkinnedMeshRenderer>();
             foreach (SkinnedMeshRenderer smesh in skinnedMeshes)
             {
-
                 if (smesh.gameObject.activeInHierarchy)
                 {
                     //skinned meshes seem to be not nearly as conveniently simple
@@ -333,6 +529,153 @@ namespace VesselView
             GL.PopMatrix();
         }
 
+        private void renderCone(Transform thrustTransform, float scale, float offset, Matrix4x4 screenMatrix, Color color)
+        {
+            float timeAdd = (Time.frameCount % 40);
+            if(timeAdd < 20)
+            {
+                scale += (scale / 100) * timeAdd;
+            }
+            else
+            {
+                scale += (scale / 100) * (40-timeAdd);
+            }
+            float sideScale = scale / 4f;
+            Matrix4x4 transMatrix = genTransMatrix(thrustTransform, settings.ship, true);
+            Vector3 posStr = new Vector3(0, 0, offset);
+            posStr = transMatrix.MultiplyPoint3x4(posStr);
+            Vector3 posStr1 = new Vector3(-sideScale, 0, offset+sideScale);
+            posStr1 = transMatrix.MultiplyPoint3x4(posStr1);
+            Vector3 posStr2 = new Vector3(0, -sideScale, offset+sideScale);
+            posStr2 = transMatrix.MultiplyPoint3x4(posStr2);
+            Vector3 posStr3 = new Vector3(sideScale, 0, offset+sideScale);
+            posStr3 = transMatrix.MultiplyPoint3x4(posStr3);
+            Vector3 posStr4 = new Vector3(0, sideScale, offset+sideScale);
+            posStr4 = transMatrix.MultiplyPoint3x4(posStr4);
+            Vector3 posEnd = new Vector3(0, 0, offset+scale);
+            posEnd = transMatrix.MultiplyPoint3x4(posEnd);
+            //setup GL, then render the lines
+            GL.Begin(GL.LINES);
+            GL.Color(color);
+            renderLine(posStr1.x, posStr1.y, posStr2.x, posStr2.y, screenMatrix);
+            renderLine(posStr2.x, posStr2.y, posStr3.x, posStr3.y, screenMatrix);
+            renderLine(posStr3.x, posStr3.y, posStr4.x, posStr4.y, screenMatrix);
+            renderLine(posStr4.x, posStr4.y, posStr1.x, posStr1.y, screenMatrix);
+            renderLine(posStr1.x, posStr1.y, posEnd.x, posEnd.y, screenMatrix);
+            renderLine(posStr2.x, posStr2.y, posEnd.x, posEnd.y, screenMatrix);
+            renderLine(posStr3.x, posStr3.y, posEnd.x, posEnd.y, screenMatrix);
+            renderLine(posStr4.x, posStr4.y, posEnd.x, posEnd.y, screenMatrix);
+            renderLine(posStr1.x, posStr1.y, posStr.x, posStr.y, screenMatrix);
+            renderLine(posStr2.x, posStr2.y, posStr.x, posStr.y, screenMatrix);
+            renderLine(posStr3.x, posStr3.y, posStr.x, posStr.y, screenMatrix);
+            renderLine(posStr4.x, posStr4.y, posStr.x, posStr.y, screenMatrix);
+            GL.End();
+        }
+
+        /// <summary>
+        /// Renders a gui icon.
+        /// </summary>
+        /// <param name="rect">Rectangle.</param>
+        /// <param name="screenMatrix">Transformation matrix.</param>
+        /// <param name="color">Color.</param>
+        private void renderIcon(Rect rect, Matrix4x4 screenMatrix, Color color, int type)
+        {
+            //setup GL, then render the lines
+            GL.Begin(GL.LINES);
+            GL.Color(color);
+            float xMid = ((rect.xMax - rect.xMin) / 2) + rect.xMin;
+            float yMid = ((rect.yMax - rect.yMin) / 2) + rect.yMin;
+            float xOneFourth = ((xMid - rect.xMin) / 2) + rect.xMin;
+            float yOneFourth = ((yMid - rect.yMin) / 2) + rect.yMin;
+            float xThreeFourth = ((rect.xMax - xMid) / 2) + xMid;
+            float yThreeFourth = ((rect.yMax - yMid) / 2) + yMid;
+            switch (type) 
+            {
+                case (int)ViewerConstants.ICONS.SQUARE:
+                    renderLine(rect.xMin, rect.yMin, rect.xMax, rect.yMin, screenMatrix);
+                    renderLine(rect.xMax, rect.yMin, rect.xMax, rect.yMax, screenMatrix);
+                    renderLine(rect.xMax, rect.yMax, rect.xMin, rect.yMax, screenMatrix);
+                    renderLine(rect.xMin, rect.yMax, rect.xMin, rect.yMin, screenMatrix);
+                    break;
+                case (int)ViewerConstants.ICONS.DIAMOND:
+                    renderLine(xMid, rect.yMin, rect.xMax, yMid, screenMatrix);
+                    renderLine(rect.xMax, yMid, xMid, rect.yMax, screenMatrix);
+                    renderLine(xMid, rect.yMax, rect.xMin, yMid, screenMatrix);
+                    renderLine(rect.xMin, yMid, xMid, rect.yMin, screenMatrix);
+                    break;
+                case (int)ViewerConstants.ICONS.SQUARE_DIAMOND:
+                    renderLine(rect.xMin, rect.yMin, rect.xMax, rect.yMin, screenMatrix);
+                    renderLine(rect.xMax, rect.yMin, rect.xMax, rect.yMax, screenMatrix);
+                    renderLine(rect.xMax, rect.yMax, rect.xMin, rect.yMax, screenMatrix);
+                    renderLine(rect.xMin, rect.yMax, rect.xMin, rect.yMin, screenMatrix);
+                    renderLine(xMid, rect.yMin, rect.xMax, yMid, screenMatrix);
+                    renderLine(rect.xMax, yMid, xMid, rect.yMax, screenMatrix);
+                    renderLine(xMid, rect.yMax, rect.xMin, yMid, screenMatrix);
+                    renderLine(rect.xMin, yMid, xMid, rect.yMin, screenMatrix);
+                    break;
+                case (int)ViewerConstants.ICONS.ENGINE_READY:
+                    renderLine(rect.xMin, rect.yMin, rect.xMax, rect.yMin, screenMatrix);
+                    renderLine(rect.xMax, rect.yMin, rect.xMax, rect.yMax, screenMatrix);
+                    renderLine(rect.xMax, rect.yMax, rect.xMin, rect.yMax, screenMatrix);
+                    renderLine(rect.xMin, rect.yMax, rect.xMin, rect.yMin, screenMatrix);
+
+                    renderLine(rect.xMin, yMid, xMid, rect.yMin, screenMatrix);
+                    renderLine(xMid, rect.yMin, rect.xMax, rect.yMax, screenMatrix);
+                    break;
+                case (int)ViewerConstants.ICONS.ENGINE_NOPOWER:
+                    renderLine(rect.xMin, rect.yMin, rect.xMax, rect.yMin, screenMatrix);
+                    renderLine(rect.xMax, rect.yMin, rect.xMax, rect.yMax, screenMatrix);
+                    renderLine(rect.xMax, rect.yMax, rect.xMin, rect.yMax, screenMatrix);
+                    renderLine(rect.xMin, rect.yMax, rect.xMin, rect.yMin, screenMatrix);
+
+                    renderLine(xMid, rect.yMin, xThreeFourth, yMid, screenMatrix);
+                    renderLine(xOneFourth, yMid, xThreeFourth, yMid, screenMatrix);
+                    renderLine(xOneFourth, yMid, xMid, rect.yMax, screenMatrix);
+                    break;
+                case (int)ViewerConstants.ICONS.ENGINE_NOFUEL:
+                    renderLine(rect.xMin, rect.yMin, rect.xMax, rect.yMin, screenMatrix);
+                    renderLine(rect.xMax, rect.yMin, rect.xMax, rect.yMax, screenMatrix);
+                    renderLine(rect.xMax, rect.yMax, rect.xMin, rect.yMax, screenMatrix);
+                    renderLine(rect.xMin, rect.yMax, rect.xMin, rect.yMin, screenMatrix);
+
+                    renderLine(rect.xMin, rect.yMin, rect.xMax, rect.yMax, screenMatrix);
+                    renderLine(rect.xMin, rect.yMax, rect.xMax, rect.yMin, screenMatrix);
+                    break;
+                case (int)ViewerConstants.ICONS.ENGINE_NOAIR:
+                    renderLine(rect.xMin, rect.yMin, rect.xMax, rect.yMin, screenMatrix);
+                    renderLine(rect.xMax, rect.yMin, rect.xMax, rect.yMax, screenMatrix);
+                    renderLine(rect.xMax, rect.yMax, rect.xMin, rect.yMax, screenMatrix);
+                    renderLine(rect.xMin, rect.yMax, rect.xMin, rect.yMin, screenMatrix);
+
+                    renderLine(xOneFourth, yMid, xThreeFourth, yMid, screenMatrix);
+                    renderLine(xMid, yOneFourth, xMid, yThreeFourth, screenMatrix);
+
+                    renderLine(xOneFourth, yOneFourth, xThreeFourth, yThreeFourth, screenMatrix);
+                    renderLine(xOneFourth, yThreeFourth, xThreeFourth, yOneFourth, screenMatrix);
+                    break;
+                case (int)ViewerConstants.ICONS.ENGINE_ACTIVE:
+                    renderLine(rect.xMin, rect.yMin, rect.xMax, rect.yMin, screenMatrix);
+                    renderLine(rect.xMax, rect.yMin, rect.xMax, rect.yMax, screenMatrix);
+                    renderLine(rect.xMax, rect.yMax, rect.xMin, rect.yMax, screenMatrix);
+                    renderLine(rect.xMin, rect.yMax, rect.xMin, rect.yMin, screenMatrix);
+
+                    renderLine(xMid, rect.yMin, xOneFourth, yThreeFourth, screenMatrix);
+                    renderLine(xMid, rect.yMin, xThreeFourth, yThreeFourth, screenMatrix);
+                    renderLine(xMid, rect.yMax, xOneFourth, yThreeFourth, screenMatrix);
+                    renderLine(xMid, rect.yMax, xThreeFourth, yThreeFourth, screenMatrix);
+                    break;
+                case (int)ViewerConstants.ICONS.ENGINE_INACTIVE:
+                    renderLine(rect.xMin, rect.yMin, rect.xMax, rect.yMin, screenMatrix);
+                    renderLine(rect.xMax, rect.yMin, rect.xMax, rect.yMax, screenMatrix);
+                    renderLine(rect.xMax, rect.yMax, rect.xMin, rect.yMax, screenMatrix);
+                    renderLine(rect.xMin, rect.yMax, rect.xMin, rect.yMin, screenMatrix);
+
+                    renderLine(rect.xMin, rect.yMin, rect.xMax, rect.yMax, screenMatrix);
+                    break;
+            }
+            GL.End();
+        }
+
         /// <summary>
         /// Renders a rectangle.
         /// </summary>
@@ -415,19 +758,36 @@ namespace VesselView
             Matrix4x4 meshTransMatrix = vessel.vesselTransform.localToWorldMatrix.inverse * meshTrans.localToWorldMatrix;
             //might also need some rotation to show a different side
             transformTemp.transform.rotation = Quaternion.identity;
-            NavBall stockNavBall = GameObject.Find("NavBall").GetComponent<NavBall>();
+            //NavBall stockNavBall = GameObject.Find("NavBall").GetComponent<NavBall>();
+            Vector3 extraRot = new Vector3(0, 0, 0);
+            float speed = ViewerConstants.SPIN_SPEED_VAL[settings.spinSpeed];
+            switch (settings.spinAxis) 
+            {
+                case (int)ViewerConstants.AXIS.X:
+                    extraRot.x += ((Time.time * speed) % 360);
+                    break;
+                case (int)ViewerConstants.AXIS.Y:
+                    extraRot.y += ((Time.time * speed) % 360);
+                    break;
+                case (int)ViewerConstants.AXIS.Z:
+                    extraRot.z += ((Time.time * speed) % 360);
+                    break;
+            }
 
             switch (settings.drawPlane)
             {
                 case (int)ViewerConstants.PLANE.XY:
+                    transformTemp.transform.Rotate(extraRot);
                     meshTransMatrix = transformTemp.transform.localToWorldMatrix * meshTransMatrix;
                     break;
                 case (int)ViewerConstants.PLANE.XZ:
                     transformTemp.transform.Rotate(new Vector3(0, 90, 0));
+                    transformTemp.transform.Rotate(extraRot);
                     meshTransMatrix = transformTemp.transform.localToWorldMatrix * meshTransMatrix;
                     break;
                 case (int)ViewerConstants.PLANE.YZ:
                     transformTemp.transform.Rotate(new Vector3(90, 0, 0));
+                    transformTemp.transform.Rotate(extraRot);
                     meshTransMatrix = transformTemp.transform.localToWorldMatrix * meshTransMatrix;
                     break;
                 case (int)ViewerConstants.PLANE.GRND:
@@ -447,7 +807,7 @@ namespace VesselView
             Matrix4x4 FLATTER;
             if (zeroFlatter)
             {
-                FLATTER = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(1, 1, 0));
+                FLATTER = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(1, 1, 1));
             }
             else {
                 FLATTER = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(1, 1, 0.001f));
@@ -480,16 +840,25 @@ namespace VesselView
             float xDiff = (maxVecG.x - minVecG.x);
             float yDiff = (maxVecG.y - minVecG.y);
             //to rescale, we need to scale up the vessel render to fit the screen bounds
-            if (settings.centerRescale)
+            if (settings.centerRescale != (int)ViewerConstants.RESCALEMODE.OFF)
             {
+                float maxDiff = 0;
+                if (settings.centerRescale == (int)ViewerConstants.RESCALEMODE.INCR) maxDiff = 0.5f;
+                if (settings.centerRescale == (int)ViewerConstants.RESCALEMODE.CLOSE) maxDiff = 0.85f;
+                if (settings.centerRescale == (int)ViewerConstants.RESCALEMODE.BEST) maxDiff = 1f;
+
                 float idealScaleX = screenWidthM / xDiff;
                 float idealScaleY = screenHeightM / yDiff;
-                settings.scaleFact = (idealScaleX < idealScaleY) ? idealScaleX : idealScaleY;
                 //round to nearest integer
-                settings.scaleFact = (int)settings.scaleFact;
-                //and clamp it a bit
-                if (settings.scaleFact < 1) settings.scaleFact = 1;
-                if (settings.scaleFact > 1000) settings.scaleFact = 1000;
+                float newScale = (int)((idealScaleX < idealScaleY) ? idealScaleX : idealScaleY);
+                float diffFact = settings.scaleFact / newScale;
+                if (diffFact < maxDiff | diffFact > 1) 
+                {
+                    settings.scaleFact = newScale;
+                    //and clamp it a bit
+                    if (settings.scaleFact < 1) settings.scaleFact = 1;
+                    if (settings.scaleFact > 1000) settings.scaleFact = 1000;
+                }
             }
             //to centerise, we need to move the center point of the vessel render
             //into the center of the screen
@@ -618,11 +987,142 @@ namespace VesselView
                     }
 
                     return color2;
+                case (int)ViewerConstants.COLORMODE.DRAG:
+                    float drag = part.angularDrag;
+                    if (part.Modules.Contains("FARControllableSurface"))
+                    {
+                        //MonoBehaviour.print("cont. surf.");
+                        PartModule FARmodule = part.Modules["FARControllableSurface"];
+                        foreach (BaseField fieldInList in FARmodule.Fields)
+                        {
+                            if (fieldInList.name.Equals("currentDrag"))
+                            {
+                                drag = (float)fieldInList.GetValue(FARmodule);
+                                break;
+                            }
+                        }
+                    }
+                    else if (part.Modules.Contains("FARWingAerodynamicModel"))
+                    {
+                        //MonoBehaviour.print("wing");
+                        PartModule FARmodule = part.Modules["FARWingAerodynamicModel"];
+                        foreach (BaseField fieldInList in FARmodule.Fields)
+                        {
+                            if (fieldInList.name.Equals("currentDrag"))
+                            {
+                                drag = (float)fieldInList.GetValue(FARmodule);
+                                break;
+                            }
+                        }
+                    }  
+                    else if (part.Modules.Contains("FARBasicDragModel"))
+                    {
+                        //MonoBehaviour.print("basic drag");
+                        PartModule FARmodule = part.Modules["FARBasicDragModel"];
+                        foreach (BaseField fieldInList in FARmodule.Fields) 
+                        {
+                            if (fieldInList.name.Equals("currentDrag")) 
+                            {
+                                drag = (float)fieldInList.GetValue(FARmodule);
+                                break;
+                            }
+                        }
+                    }
+                    return genHeatmapColor(drag);
+                case (int)ViewerConstants.COLORMODE.LIFT:
+                    float lift = 0;
+                    if (part.Modules.Contains("FARControllableSurface"))
+                    {
+                        //MonoBehaviour.print("cont. surf.");
+                        PartModule FARmodule = part.Modules["FARControllableSurface"];
+                        foreach (BaseField fieldInList in FARmodule.Fields)
+                        {
+                            if (fieldInList.name.Equals("currentLift"))
+                            {
+                                lift = (float)fieldInList.GetValue(FARmodule);
+                                break;
+                            }
+                        }
+                    }
+                    else if (part.Modules.Contains("FARWingAerodynamicModel"))
+                    {
+                        //MonoBehaviour.print("wing");
+                        PartModule FARmodule = part.Modules["FARWingAerodynamicModel"];
+                        foreach (BaseField fieldInList in FARmodule.Fields)
+                        {
+                            if (fieldInList.name.Equals("currentLift"))
+                            {
+                                lift = (float)fieldInList.GetValue(FARmodule);
+                                break;
+                            }
+                        }
+                    }
+                    return genHeatmapColor(lift);
+                case (int)ViewerConstants.COLORMODE.STALL:
+                    float stall = 0;
+                    if (part.Modules.Contains("FARControllableSurface"))
+                    {
+                        //MonoBehaviour.print("cont. surf.");
+                        PartModule FARmodule = part.Modules["FARControllableSurface"];
+                        foreach (BaseField fieldInList in FARmodule.Fields)
+                        {
+                            if (fieldInList.name.Equals("stall"))
+                            {
+                                stall = (float)fieldInList.GetValue(FARmodule);
+                                break;
+                            }
+                        }
+                    }
+                    else if (part.Modules.Contains("FARWingAerodynamicModel"))
+                    {
+                        //MonoBehaviour.print("wing");
+                        PartModule FARmodule = part.Modules["FARWingAerodynamicModel"];
+                        foreach (BaseField fieldInList in FARmodule.Fields)
+                        {
+                            if (fieldInList.name.Equals("stall"))
+                            {
+                                stall = (float)fieldInList.GetValue(FARmodule);
+                                break;
+                            }
+                        }
+                    }
+                    return genFractColor(1f-stall);
                 case (int)ViewerConstants.COLORMODE.HIDE:
                     return Color.black;
                 default:
                     return Color.white;
             }
+        }
+
+        public Color genHeatmapColor(float value)
+        {
+            //find the appropriate color for this specific part
+            Color color = new Color(0.1f,0.1f,0.1f);
+            //grey to blue to cyan to green to yellow to red
+            //0    to  1   to  4   to   10   to   40   to infinity
+            if (value < 1) 
+            {
+                color.b += value * 0.9f;
+            }else if(value < 4) 
+            {
+                color.b = 1;
+                color.g += ((value - 1) / 3) * 0.9f; 
+            }else if (value < 10)
+            {
+                color.g = 1;
+                color.b += 0.9f-(((value - 4) / 6) * 0.9f);
+            }
+            else if (value < 40)
+            {
+                color.g = 1;
+                color.r += ((value - 10) / 30) * 0.9f; 
+            }
+            else 
+            {
+                color.r = 1;
+                color.g += 0.9f - (1-(1/(value-40+1)))*0.9f;
+            }
+            return color;
         }
 
         public Color genFractColor(float fraction) {
