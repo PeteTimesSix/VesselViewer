@@ -13,6 +13,8 @@ namespace VesselView
         public bool centerOnRootV = false;
         public bool displayCOM = true;
         public bool displayEngines = true;
+        public bool displayGround = true;
+        public bool displayAxes = false;
         //public bool displayCOP = true;
 
         public int centerRescale = (int)ViewerConstants.RESCALEMODE.INCR;
@@ -305,6 +307,10 @@ namespace VesselView
                     return boolAsString(displayCOM);
                 case "displayEngines":
                     return boolAsString(displayEngines);
+                case "displayGround":
+                    return boolAsString(displayGround);
+                case "displayAxes":
+                    return boolAsString(displayAxes);
                 /*case "displayCOP":
                     return boolAsString(displayCOP);*/
                 case "centerRescale":

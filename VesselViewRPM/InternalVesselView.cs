@@ -42,7 +42,7 @@ namespace JSI.Handlers
         [KSPField]
         private bool autoCenterMode = true;
         [KSPField]
-        private int centeringModeRescaleNew = (int)ViewerConstants.RESCALEMODE.CLOSE;
+        private int centeringModeRescaleNew = (int)ViewerConstants.RESCALEMODE.INCR;
         [KSPField]
         private bool latencyMode = false;
         [KSPField]
@@ -65,6 +65,10 @@ namespace JSI.Handlers
         public bool displayEngines = true;
         [KSPField]
         public bool displayCOM = true;
+        [KSPField]
+        public bool displayGround = true;
+        [KSPField]
+        public bool displayAxes = false;
 
         private bool ready = false;
         
@@ -186,46 +190,119 @@ namespace JSI.Handlers
             settings.spinSpeed = spinSpeed;
             settings.displayEngines = displayEngines;
             settings.displayCOM = displayCOM;
+            settings.displayGround = displayGround;
+            settings.displayAxes = displayAxes;
         }
 
         private void setupMenus() {
             //well I was gonna have to hardcode this SOMEWHERE.
-            //int propertyToChange, int propertyToPrint, bool valueDirect, int value, int changeMode
-            VViewSimpleMenuItem[] DMMItems = {
-                new VViewSimpleMenuItem("Bounds color code:",settings,"colorModeBox","colorModeBox"),
-                new VViewSimpleMenuItem("Mesh color mode:",settings,"colorModeMesh","colorModeMesh"),
-                new VViewSimpleMenuItem("Dull bounds:",settings,"colorModeBoxDull","colorModeBoxDull"),
-                new VViewSimpleMenuItem("Dull mesh:",settings,"colorModeMeshDull","colorModeMeshDull"),
-                new VViewSimpleMenuItem("Spin axis:",settings,"spinAxis","spinAxis"),
-                new VViewSimpleMenuItem("Spin speed:",settings,"spinSpeed","spinSpeed"),
-                                      };
-            VViewSimpleMenu dispModeMenu = new VViewSimpleMenu(DMMItems, "Display modes");
+            List<VViewSimpleMenuItem> itemList = new List<VViewSimpleMenuItem>();
+            /*
 
-            VViewMenuPartSelector partSelectMenu = new VViewMenuPartSelector(settings);
+            
             VViewSimpleMenuItem[] PCMItems = {
-                new VViewSimpleMenuItem("Latency mode:",settings,"latency","latency"),
+
+                                      };
+            */
+            itemList.Clear();
+            itemList.Add(new VViewSimpleMenuItem("Active: ", settings, "", "drawPlane"));
+            for (int i = 0; i < ViewerConstants.PLANES.Length; i++) 
+            {
+                itemList.Add(new VViewSimpleMenuItem(ViewerConstants.PLANES[i], settings, "drawPlane", "", i));
+            }
+            VViewSimpleMenu orientationMENU = new VViewSimpleMenu(itemList.ToArray(), "Vessel orientation");
+            itemList.Clear();
+            itemList.Add(new VViewSimpleMenuItem("Active: ", settings, "", "spinAxis"));
+            for (int i = 0; i < ViewerConstants.AXES.Length; i++)
+            {
+                itemList.Add(new VViewSimpleMenuItem(ViewerConstants.AXES[i]+" axis", settings, "spinAxis", "", i));
+            }
+            itemList.Add(new VViewSimpleMenuItem("Rotation speed:", settings, "spinSpeed", "spinSpeed"));
+            VViewSimpleMenu rotationMENU = new VViewSimpleMenu(itemList.ToArray(), "Display autorotation");
+            
+            VViewSimpleMenuItem[] DCONItems = {
+                new VViewSimpleMenuItem("Vessel orientation",orientationMENU),
+                new VViewSimpleMenuItem("Display autorotation",rotationMENU),
                 new VViewSimpleMenuItem("Autocentering:",settings,"autoCenter","autoCenter"),
                 new VViewSimpleMenuItem("A.c. scaling:",settings,"centerRescale","centerRescale"),
                 new VViewSimpleMenuItem("Hor. pod center:",settings,"centerOnRootH","centerOnRootH"),
                 new VViewSimpleMenuItem("Ver. pod center:",settings,"centerOnRootV","centerOnRootV"),
+                new VViewSimpleMenuItem("Dull bounds:",settings,"colorModeBoxDull","colorModeBoxDull"),
+                new VViewSimpleMenuItem("Dull mesh:",settings,"colorModeMeshDull","colorModeMeshDull"),
+                                      };
+            VViewSimpleMenu displayConfigMENU = new VViewSimpleMenu(DCONItems, "Display configuration");
+
+            orientationMENU.setRoot((IVViewMenu)displayConfigMENU);
+            rotationMENU.setRoot((IVViewMenu)displayConfigMENU); 
+
+            /***************************************************************************************************/
+            
+            itemList.Clear();
+            itemList.Add(new VViewSimpleMenuItem("Active: ", settings, "", "colorModeMesh"));
+            for (int i = 0; i < ViewerConstants.COLORMODES.Length; i++)
+            {
+                itemList.Add(new VViewSimpleMenuItem(ViewerConstants.COLORMODES[i], settings, "colorModeMesh", "", i));
+            }
+            VViewSimpleMenu passiveDisplayWireMENU = new VViewSimpleMenu(itemList.ToArray(), "Passive display (wire)");
+            itemList.Clear();
+            itemList.Add(new VViewSimpleMenuItem("Active: ", settings, "", "colorModeBox"));
+            for (int i = 0; i < ViewerConstants.COLORMODES.Length; i++)
+            {
+                itemList.Add(new VViewSimpleMenuItem(ViewerConstants.COLORMODES[i], settings, "colorModeBox", "", i));
+            }
+            VViewSimpleMenu passiveDisplayBoundsMENU = new VViewSimpleMenu(itemList.ToArray(), "Passive display (wire)");
+
+            VViewSimpleMenuItem[] PASItems = {
+                new VViewSimpleMenuItem("Passive display (wire)",passiveDisplayWireMENU),
+                new VViewSimpleMenuItem("Passive display (bounds)",passiveDisplayBoundsMENU),
+                new VViewSimpleMenuItem("Display axes:",settings,"displayAxes","displayAxes"),
+                new VViewSimpleMenuItem("Display COM:",settings,"displayCOM","displayCOM"),
+                new VViewSimpleMenuItem("Display engine status:",settings,"displayEngines","displayEngines"),
+                new VViewSimpleMenuItem("Display landing assist:",settings,"displayGround","displayGround"),
+                                      };
+            VViewSimpleMenu passiveDisplaysMENU = new VViewSimpleMenu(PASItems, "Passive display modes");
+
+            passiveDisplayWireMENU.setRoot((IVViewMenu)passiveDisplaysMENU);
+            passiveDisplayBoundsMENU.setRoot((IVViewMenu)passiveDisplaysMENU);
+
+            /***************************************************************************************************/
+            VViewMenuPartSelector partSelectMenu = new VViewMenuPartSelector(settings);
+            VViewSimpleMenuItem[] INTItems = {
+                new VViewSimpleMenuItem("Part selector (tree-traversal)",partSelectMenu),
                 new VViewSimpleMenuItem("Zoom on selection:",settings,"selectionCenter","selectionCenter"),
                 new VViewSimpleMenuItem("Affect symmetry:",settings,"selectionSymmetry","selectionSymmetry"),
                                       };
-            VViewSimpleMenu partSelectConfigMenu = new VViewSimpleMenu(PCMItems, "P. sel. config");
+            VViewSimpleMenu interactiveDisplaysMENU = new VViewSimpleMenu(INTItems, "Interactive modes");
+
+            partSelectMenu.setRoot((IVViewMenu)interactiveDisplaysMENU);
+            /***************************************************************************************************/
+
+            VViewSimpleMenuItem[] OTHItems = {
+                new VViewSimpleMenuItem("Latency mode:",settings,"latency","latency"),
+                                      };
+            VViewSimpleMenu configurationMENU = new VViewSimpleMenu(OTHItems, "Other configuration");
+
+            /***************************************************************************************************/
+
             VViewSimpleMenuItem[] MAMItems = {
-                new VViewSimpleMenuItem("Plane:",settings,"drawPlane","drawPlane"),
-                new VViewSimpleMenuItem("Display modes",dispModeMenu),
-                new VViewSimpleMenuItem("Part selector",partSelectMenu),
-                new VViewSimpleMenuItem("Config",partSelectConfigMenu),
+                new VViewSimpleMenuItem("Display configuration",displayConfigMENU),
+                new VViewSimpleMenuItem("Passive display modes",passiveDisplaysMENU),
+                new VViewSimpleMenuItem("Interactive modes",interactiveDisplaysMENU),
+                new VViewSimpleMenuItem("Other configuration",configurationMENU),
                                       };
             VViewSimpleMenu mainMenu = new VViewSimpleMenu(MAMItems, "Main menu");
+
+            displayConfigMENU.setRoot((IVViewMenu)mainMenu);
+            passiveDisplaysMENU.setRoot((IVViewMenu)mainMenu);
+            interactiveDisplaysMENU.setRoot((IVViewMenu)mainMenu);
+            configurationMENU.setRoot((IVViewMenu)mainMenu);
+
             VViewSimpleMenuItem[] HIDItems = {
                 new VViewSimpleMenuItem("Show",mainMenu)
                                       };
             VViewSimpleMenu hideMenu = new VViewSimpleMenu(HIDItems, "Hidden");
-            dispModeMenu.setRoot((IVViewMenu)mainMenu);
-            partSelectMenu.setRoot((IVViewMenu)mainMenu);
-            partSelectConfigMenu.setRoot((IVViewMenu)mainMenu);
+            /*dispModeMenu.setRoot((IVViewMenu)mainMenu);
+            */
             mainMenu.setRoot((IVViewMenu)hideMenu);
             activeMenu = hideMenu;
 

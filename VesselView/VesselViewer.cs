@@ -129,6 +129,7 @@ namespace VesselView
                 //dunno what this does, but I trust in the stolen codes
                 lineMaterial.SetPass(0);
 
+                
                 //now render each part (assumes root part is in the queue)
                 while (partQueue.Count > 0)
                 {
@@ -156,6 +157,16 @@ namespace VesselView
                 if (settings.displayCOM) 
                 {
                     renderCOM(matrix);
+                }
+                if (settings.displayGround)
+                {
+                    //first, render the ground
+                    renderGround(matrix);
+                }
+                if (settings.displayAxes)
+                {
+                    //first, render the ground
+                    renderAxes(matrix);
                 }
                 /*if (settings.displayCOP)
                 {
@@ -271,6 +282,15 @@ namespace VesselView
                         else if (Found_MonoPropellant) color = new Color(0.9f, 0.9f, 0.9f);
                         scale *= part.mass;
                         renderCone(thrustTransform, scale, part.mass, screenMatrix, color);
+
+                        Vector3 v = new Vector3(0, 0, scale + part.mass);
+                        v = transMatrix.MultiplyPoint3x4(v);
+                        if (v.x < minVecG.x) minVecG.x = v.x;
+                        if (v.y < minVecG.y) minVecG.y = v.y;
+                        if (v.z < minVecG.z) minVecG.z = v.z;
+                        if (v.x > maxVecG.x) maxVecG.x = v.x;
+                        if (v.y > maxVecG.y) maxVecG.y = v.y;
+                        if (v.z > maxVecG.z) maxVecG.z = v.z;
                     }
                     //render icon
                     float div = 6 / settings.scaleFact;
@@ -293,15 +313,7 @@ namespace VesselView
                                 renderIcon(new Rect(-div + posStr.x, -div + posStr.y, 2 * div, 2 * div), screenMatrix, Color.green, (int)ViewerConstants.ICONS.ENGINE_READY);
                         }
 
-
-                    Vector3 v = new Vector3(0, 0, scale + part.mass);
-                    v = transMatrix.MultiplyPoint3x4(v);
-                    if (v.x < minVecG.x) minVecG.x = v.x;
-                    if (v.y < minVecG.y) minVecG.y = v.y;
-                    if (v.z < minVecG.z) minVecG.z = v.z;
-                    if (v.x > maxVecG.x) maxVecG.x = v.x;
-                    if (v.y > maxVecG.y) maxVecG.y = v.y;
-                    if (v.z > maxVecG.z) maxVecG.z = v.z;
+                    
                     //renderIcon(new Rect(-div + posEnd.x, -div + posEnd.y, 2 * div, 2 * div), screenMatrix, Color.yellow, (int)ViewerConstants.ICONS.SQUARE_DIAMOND);
                 }
             }
@@ -324,9 +336,152 @@ namespace VesselView
 
         }
 
+        private void renderGround(Matrix4x4 screenMatrix)
+        {
+            
+            //Vector3 groundN = settings.ship.mainBody.GetRelSurfaceNVector(settings.ship.latitude, settings.ship.longitude);
+            Vector3d position = settings.ship.vesselTransform.position;
+            //unit vectors in the up (normal to planet surface), east, and north (parallel to planet surface) directions
+            //Vector3d eastUnit = settings.ship.mainBody.getRFrmVel(position).normalized; //uses the rotation of the body's frame to determine "east"
+            Vector3d upUnit = (position - settings.ship.mainBody.position).normalized;
+            Vector3 groundDir = position + upUnit;
+            //Quaternion lookAt = Quaternion.LookRotation(upUnit).Inverse();
+            MonoBehaviour.print("upUnit "+upUnit);
+            Matrix4x4 worldToLocal = settings.ship.vesselTransform.worldToLocalMatrix;
+            Vector3 localSpaceNormal = worldToLocal.MultiplyPoint3x4(groundDir);
+            Vector3 perp1;
+            if (localSpaceNormal.y > 0.9 | localSpaceNormal.y < -0.9)
+                perp1 = Vector3.Cross(Vector3.right, localSpaceNormal);
+            else
+                perp1 = Vector3.Cross(Vector3.up, localSpaceNormal);
+            perp1 = perp1.normalized;
+            Vector3 perp2 = Vector3.Cross(localSpaceNormal+perp1, localSpaceNormal);
+            perp2 = perp2.normalized;
+            MonoBehaviour.print("localSpaceNormal " + localSpaceNormal);
+            MonoBehaviour.print("perp1 " + perp1);
+            MonoBehaviour.print("perp2 " + perp2);
+            //Vector3 worldSpaceNormal = settings.ship.vesselTransform.localToWorldMatrix.MultiplyPoint3x4(groundDir);
+            double altitude = settings.ship.altitude-settings.ship.terrainAltitude;
+            if (altitude > ViewerConstants.MAX_ALTITUDE) return;
+            float biggestCrossSection = maxVecG.x - minVecG.x;
+            if (maxVecG.y - minVecG.y > biggestCrossSection) biggestCrossSection = maxVecG.y - minVecG.y;
+            if (maxVecG.z - minVecG.z > biggestCrossSection) biggestCrossSection = maxVecG.z - minVecG.z;
+            //smallestCrossSection = smallestCrossSection / settings.scaleFact;
+            //MonoBehaviour.print("biggestCrossSection " + biggestCrossSection);
+            //biggestCrossSection = 20;
+            Vector3 groundBelow = localSpaceNormal * -(float)altitude;
+            Vector3 groundBelow1 = groundBelow + (perp1 * biggestCrossSection);
+            Vector3 groundBelow2 = groundBelow - (perp1 * biggestCrossSection);
+            Vector3 groundBelow3 = groundBelow + (perp2 * biggestCrossSection);
+            Vector3 groundBelow4 = groundBelow - (perp2 * biggestCrossSection);
+            /*Vector3 groundBelow = localSpaceNormal * 10;
+            MonoBehaviour.print("localSpaceNormal " + localSpaceNormal);
+            groundBelow = worldSpaceNormal * 10;
+            MonoBehaviour.print("worldSpaceNormal " + localSpaceNormal);
+            groundBelow = localSpaceNormal * 10;*/
+            //Vector3 groundBelow = new Vector3(0, -(float)altitude, 0);
+            /*Vector3 groundBelow1 = new Vector3(biggestCrossSection, -(float)altitude, biggestCrossSection);
+            Vector3 groundBelow2 = new Vector3(biggestCrossSection, -(float)altitude, -biggestCrossSection);
+            Vector3 groundBelow3 = new Vector3(-biggestCrossSection, -(float)altitude, -biggestCrossSection);
+            Vector3 groundBelow4 = new Vector3(-biggestCrossSection, -(float)altitude, biggestCrossSection);*/
+            //Vector3 direction = groundBelow + groundN;
+            //MonoBehaviour.print("COM>"+COM);
+            Matrix4x4 transMatrix = genTransMatrix(settings.ship.rootPart.transform, settings.ship, true);
+
+            groundBelow = transMatrix.MultiplyPoint3x4(groundBelow);
+            groundBelow1 = transMatrix.MultiplyPoint3x4(groundBelow1);
+            groundBelow2 = transMatrix.MultiplyPoint3x4(groundBelow2);
+            groundBelow3 = transMatrix.MultiplyPoint3x4(groundBelow3);
+            groundBelow4 = transMatrix.MultiplyPoint3x4(groundBelow4);
+
+            /*Quaternion rot = Quaternion.FromToRotation(groundN, Vector3.up);
+            Quaternion rotInv = Quaternion.FromToRotation(Vector3.up, groundN);*/
+            float angle = Vector3.Angle(Vector3.up, localSpaceNormal);
+            if (angle > 40) angle = 40;
+            MonoBehaviour.print("angle> " + angle);
+            Color color = genFractColor(1-(angle / 40f));
+            //transMatrix = screenMatrix * transMatrix;
+            //now render it
+
+            //direction = transMatrix.MultiplyPoint3x4(direction);
+
+
+            //groundBelow = settings.ship.vesselTransform.rotation.Inverse() * groundBelow;
+            /*groundBelow1 = settings.ship.vesselTransform.rotation.Inverse() * groundBelow1;
+            groundBelow2 = settings.ship.vesselTransform.rotation.Inverse() * groundBelow2;
+            groundBelow3 = settings.ship.vesselTransform.rotation.Inverse() * groundBelow3;
+            groundBelow4 = settings.ship.vesselTransform.rotation.Inverse() * groundBelow4;*/
+
+            /*groundBelow = rot * groundBelow;
+            groundBelow1 = rot * groundBelow1;
+            groundBelow2 = rot * groundBelow2;
+            groundBelow3 = rotInv * groundBelow3;
+            groundBelow4 = rot * groundBelow4;*/
+
+            
+
+            /*MonoBehaviour.print("after>" + groundBelow);
+            MonoBehaviour.print("after>" + groundBelow1);
+            MonoBehaviour.print("after>" + groundBelow2);
+            MonoBehaviour.print("after>" + groundBelow3);
+            MonoBehaviour.print("after>" + groundBelow4);*/
+
+            //MonoBehaviour.print("COM modified>" + COM);
+            float div = 6 / settings.scaleFact;
+            renderIcon(new Rect(-div + groundBelow.x, -div + groundBelow.y, 2 * div, 2 * div), screenMatrix, Color.magenta, (int)ViewerConstants.ICONS.SQUARE);
+            //renderIcon(new Rect(-div + direction.x, -div + direction.y, 2 * div, 2 * div), screenMatrix, Color.magenta, (int)ViewerConstants.ICONS.DIAMOND);
+
+            GL.Begin(GL.LINES);
+            GL.Color(color);
+            renderLine(groundBelow1.x, groundBelow1.y, groundBelow2.x, groundBelow2.y, screenMatrix);
+            renderLine(groundBelow2.x, groundBelow2.y, groundBelow3.x, groundBelow3.y, screenMatrix);
+            renderLine(groundBelow3.x, groundBelow3.y, groundBelow4.x, groundBelow4.y, screenMatrix);
+            renderLine(groundBelow4.x, groundBelow4.y, groundBelow1.x, groundBelow1.y, screenMatrix);
+
+            renderLine(groundBelow3.x, groundBelow3.y, groundBelow1.x, groundBelow1.y, screenMatrix);
+            renderLine(groundBelow4.x, groundBelow4.y, groundBelow2.x, groundBelow2.y, screenMatrix);
+            GL.End();
+
+            if (groundBelow.x < minVecG.x) minVecG.x = groundBelow.x;
+            if (groundBelow.y < minVecG.y) minVecG.y = groundBelow.y;
+            if (groundBelow.z < minVecG.z) minVecG.z = groundBelow.z;
+            if (groundBelow.x > maxVecG.x) maxVecG.x = groundBelow.x;
+            if (groundBelow.y > maxVecG.y) maxVecG.y = groundBelow.y;
+            if (groundBelow.z > maxVecG.z) maxVecG.z = groundBelow.z;
+        }
+
+        private void renderAxes(Matrix4x4 screenMatrix)
+        {
+
+            Matrix4x4 transMatrix = genTransMatrix(settings.ship.rootPart.transform, settings.ship, true);
+
+            Vector3 up = transMatrix.MultiplyPoint3x4(Vector3.up * 10000);
+            Vector3 down = transMatrix.MultiplyPoint3x4(Vector3.down * 10000);
+            Vector3 left = transMatrix.MultiplyPoint3x4(Vector3.left * 10000);
+            Vector3 right = transMatrix.MultiplyPoint3x4(Vector3.right * 10000);
+            Vector3 front = transMatrix.MultiplyPoint3x4(Vector3.forward * 10000);
+            Vector3 back = transMatrix.MultiplyPoint3x4(Vector3.back * 10000);
+
+            GL.Begin(GL.LINES);
+            GL.Color(Color.red);
+            renderLine(left.x, left.y, right.x, right.y, screenMatrix);
+            GL.End();
+
+            GL.Begin(GL.LINES);
+            GL.Color(Color.blue);
+            renderLine(up.x, up.y, down.x, down.y, screenMatrix);
+            GL.End();
+
+            GL.Begin(GL.LINES);
+            GL.Color(Color.green);
+            renderLine(front.x, front.y, back.x, back.y, screenMatrix);
+            GL.End();
+
+        }
 
         private void renderCOM(Matrix4x4 screenMatrix)
         {
+            
             Vector3 COM = settings.ship.findLocalCenterOfMass();
             //MonoBehaviour.print("COM>"+COM);
             Matrix4x4 transMatrix = genTransMatrix(settings.ship.rootPart.transform, settings.ship, true);
@@ -787,6 +942,13 @@ namespace VesselView
                     break;
                 case (int)ViewerConstants.PLANE.YZ:
                     transformTemp.transform.Rotate(new Vector3(90, 0, 0));
+                    transformTemp.transform.Rotate(extraRot);
+                    meshTransMatrix = transformTemp.transform.localToWorldMatrix * meshTransMatrix;
+                    break;
+                case (int)ViewerConstants.PLANE.ISO:
+                    transformTemp.transform.Rotate(new Vector3(0, -30, 0));
+                    transformTemp.transform.Rotate(new Vector3(15, 0, 0));
+                    
                     transformTemp.transform.Rotate(extraRot);
                     meshTransMatrix = transformTemp.transform.localToWorldMatrix * meshTransMatrix;
                     break;

@@ -18,10 +18,10 @@ namespace VesselView
             OFF, INCR, CLOSE, BEST
         }
 
-        public static readonly string[] PLANES = { "XY", "XZ", "YZ", "Relative", "Real" };
+        public static readonly string[] PLANES = { "XY", "XZ", "YZ","Isometric", "Relative", "Real" };
         public enum PLANE
         {
-            XY, XZ, YZ, GRND, REAL
+            XY, XZ, YZ, ISO, GRND, REAL
         }
 
         public static readonly string[] AXES = { "X", "Y", "Z"};
@@ -82,6 +82,8 @@ namespace VesselView
                 this.color = color;
             }
         }
+
+        public static float MAX_ALTITUDE = 250;
     }
 
         

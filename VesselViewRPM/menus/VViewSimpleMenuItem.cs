@@ -13,8 +13,8 @@ namespace VesselViewRPM
         public string label;
         private ViewerSettings settings;
 
-        private string targetProperty;
-        private string displayProperty;
+        private string targetProperty = "";
+        private string displayProperty = "";
 
         //if true, set direct value, else cycle through options
         private bool setValue = false;
@@ -38,12 +38,19 @@ namespace VesselViewRPM
             this.menuToChangeTo = menuTarget;
         }
 
-        public VViewSimpleMenuItem(string label, IVViewMenu menuTarget, int directValue)
+        public VViewSimpleMenuItem(string label, VesselView.ViewerSettings settings, string propertyToChange, string propertyToPrint, int value)
         {
             this.label = label;
-            this.menuToChangeTo = menuTarget;
-            setValue = true;
-            value = directValue;
+            this.settings = settings;
+            this.targetProperty = propertyToChange;
+            this.displayProperty = propertyToPrint;
+            this.setValue = true;
+            this.value = value;
+            //this.propertyToChangeID = propertyToChange;
+            //this.propertyToPrintID = propertyToPrint;
+            //this.changeValueDirect = valueDirect;       
+            //this.changeValue = value;
+            //this.changeMode = changeMode;
         }
 
         public VViewSimpleMenuItem(string label, VesselView.ViewerSettings settings, string propertyToChange, string propertyToPrint/*, bool valueDirect, int value*/)
@@ -68,7 +75,8 @@ namespace VesselViewRPM
             //MonoBehaviour.print("CLICK on " + label);
             //MonoBehaviour.print("looking for " + targetProperty);
 
-            if (settings != null) {
+            if (settings != null & !targetProperty.Equals(""))
+            {
                 FieldInfo fieldInfo = settings.GetType().GetField(targetProperty);
                 //MonoBehaviour.print("fieldInfo> " + fieldInfo);
                 object value = fieldInfo.GetValue(settings);
@@ -113,7 +121,10 @@ namespace VesselViewRPM
             }
             else 
             {
-                return label + settings.getPropertyDesc(displayProperty);
+                if (displayProperty.Equals("")) 
+                    return label;
+                else 
+                    return label + settings.getPropertyDesc(displayProperty);
                 //return label + settings.getSmartPropertyByID(propertyToPrintID);
             }
         }
