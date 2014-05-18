@@ -23,16 +23,19 @@ namespace VesselView
         public int centerRescale = (int)ViewerConstants.RESCALEMODE.INCR;
 
         public bool autoCenter = true;
-        public bool latency = false;
+        
         public int drawPlane = 0;
         public int scalePos = 0;
         public float scaleFact = 5;
-        public float scrOffX = 0;
-        public float scrOffY = 0;
+        public int scrOffX = 0;
+        public int scrOffY = 0;
         public int spinAxis = (int)ViewerConstants.AXIS.Y;
         public int spinSpeed = 0;
 
-        public int displayGroundMAX = ViewerConstants.RESCALEMODES.Length;
+        public int latency = (int)ViewerConstants.LATENCY.LOW;
+
+        public int latencyMAX = ViewerConstants.LATENCIES.Length;
+        public int displayGroundMAX = ViewerConstants.GROUND_DISPMODES.Length;
         public int centerRescaleMAX = ViewerConstants.RESCALEMODES.Length;
         public int colorModeMeshMAX = ViewerConstants.COLORMODES.Length;
         public int colorModeBoxMAX = ViewerConstants.COLORMODES.Length;
@@ -324,7 +327,7 @@ namespace VesselView
                 case "autoCenter":
                     return boolAsString(autoCenter);
                 case "latency":
-                    return boolAsString(latency);
+                    return ViewerConstants.LATENCIES[latency];
                 case "drawPlane":
                     return ViewerConstants.PLANES[drawPlane];
                 case "scalePos":

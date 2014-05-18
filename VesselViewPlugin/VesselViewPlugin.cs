@@ -144,9 +144,10 @@ namespace VesselView
                     settings.colorModeMesh++;
                     if (settings.colorModeMesh == ViewerConstants.COLORMODES.Length) settings.colorModeMesh = 0;
                 }
-                if (GUILayout.Button("Latency Mode:" + settings.latency, mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
+                if (GUILayout.Button("Latency Mode:" + ViewerConstants.LATENCIES[settings.latency], mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
                 {
-                    settings.latency = !settings.latency;
+                    settings.latency++;
+                    if (settings.latency == settings.latencyMAX) settings.latency = 0;
                 }
                 GUILayout.EndHorizontal();
                 GUILayout.BeginHorizontal();

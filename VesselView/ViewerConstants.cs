@@ -44,9 +44,15 @@ namespace VesselView
             NONE, STATE, STAGE, HEAT, FUEL, DRAG, LIFT, STALL, HIDE
         }
 
+        public static readonly string[] LATENCIES = { "Off", "Low", "Medium", "High", "Obscene"};
+        public enum LATENCY
+        {
+            OFF, LOW, MEDIUM, HIGH, TOOHIGH
+        }
+
         public enum ICONS
         {
-            SQUARE, DIAMOND, SQUARE_DIAMOND,
+            SQUARE, DIAMOND, SQUARE_DIAMOND, TRIANGLE_DOWN, TRIANGLE_UP,
             ENGINE_NOFUEL,
             ENGINE_NOPOWER,
             ENGINE_NOAIR,

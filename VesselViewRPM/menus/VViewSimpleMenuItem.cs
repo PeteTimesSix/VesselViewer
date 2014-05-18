@@ -19,6 +19,7 @@ namespace VesselViewRPM
         //if true, set direct value, else cycle through options
         private bool setValue = false;
         private int value;
+        private bool addValue = false;
 
         //private int propertyToChangeID = (int)ViewerSettings.IDs.NULL;
         //private int propertyToPrintID = (int)ViewerSettings.IDs.NULL;
@@ -38,7 +39,7 @@ namespace VesselViewRPM
             this.menuToChangeTo = menuTarget;
         }
 
-        public VViewSimpleMenuItem(string label, VesselView.ViewerSettings settings, string propertyToChange, string propertyToPrint, int value)
+        public VViewSimpleMenuItem(string label, VesselView.ViewerSettings settings, string propertyToChange, string propertyToPrint, int value, bool addition)
         {
             this.label = label;
             this.settings = settings;
@@ -46,6 +47,7 @@ namespace VesselViewRPM
             this.displayProperty = propertyToPrint;
             this.setValue = true;
             this.value = value;
+            this.addValue = addition;
             //this.propertyToChangeID = propertyToChange;
             //this.propertyToPrintID = propertyToPrint;
             //this.changeValueDirect = valueDirect;       
@@ -89,7 +91,13 @@ namespace VesselViewRPM
                 {
                     if (setValue) 
                     {
-                        fieldInfo.SetValue(settings, this.value);
+                        if(!addValue)
+                            fieldInfo.SetValue(settings, this.value);
+                        else 
+                        {
+                            int curVal = (int)fieldInfo.GetValue(settings);
+                            fieldInfo.SetValue(settings, curVal + this.value);
+                        }
                     }
                     else 
                     {

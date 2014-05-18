@@ -54,18 +54,25 @@ namespace VesselView
         public void drawCall(RenderTexture screen) {
             //Latency mode to limit to one frame per second if FPS is affected
             //also because it happens to look exactly like those NASA screens :3
-            if (settings.latency)
+            bool redraw = false;
+            if (settings.latency == (int)ViewerConstants.LATENCY.OFF) redraw = true;
+            else if (settings.latency == (int)ViewerConstants.LATENCY.LOW) 
             {
-                if ((Time.time - lastUpdate) > 1 & settings.latency)
-                {
-                    restartDraw(screen);
-                    if (settings.autoCenter)
-                    {
-                        centerise(screen.width, screen.height);
-                    }
-                }
+                if (Time.frameCount % 3 == 0) redraw = true;
             }
-            else
+            else if (settings.latency == (int)ViewerConstants.LATENCY.MEDIUM)
+            {
+                if (Time.frameCount % 10 == 0) redraw = true;
+            }
+            else if (settings.latency == (int)ViewerConstants.LATENCY.HIGH)
+            {
+                if (Time.frameCount % 30 == 0) redraw = true;
+            }
+            else if (settings.latency == (int)ViewerConstants.LATENCY.TOOHIGH)
+            {
+                if (Time.frameCount % 75 == 0) redraw = true;
+            }
+            if (redraw) 
             {
                 restartDraw(screen);
                 if (settings.autoCenter)
@@ -436,7 +443,7 @@ namespace VesselView
 
             //MonoBehaviour.print("COM modified>" + COM);
             float div = 6 / settings.scaleFact;
-            renderIcon(new Rect(-div + groundBelow.x, -div + groundBelow.y, 2 * div, 2 * div), screenMatrix, Color.magenta, (int)ViewerConstants.ICONS.SQUARE);
+            renderIcon(new Rect(-div + groundBelow.x, -div + groundBelow.y, 2 * div, 2 * div), screenMatrix, Color.green, (int)ViewerConstants.ICONS.TRIANGLE_DOWN);
             //renderIcon(new Rect(-div + direction.x, -div + direction.y, 2 * div, 2 * div), screenMatrix, Color.magenta, (int)ViewerConstants.ICONS.DIAMOND);
 
             GL.Begin(GL.LINES);
@@ -611,6 +618,7 @@ namespace VesselView
                         transMatrix = scrnMatrix * transMatrix;
                         //now render it
                         if(!partColor.Equals(Color.black))
+                            //renderMesh(mesh, transMatrix, partColor);
                             renderMesh(mesh.triangles, mesh.vertices, transMatrix, partColor);
                     }
                 }
@@ -630,6 +638,7 @@ namespace VesselView
                     transMatrix = scrnMatrix * transMatrix;
                     //now render it
                     if (!partColor.Equals(Color.black))
+                        //renderMesh(bakedMesh, transMatrix, partColor);
                         renderMesh(bakedMesh.triangles, bakedMesh.vertices, transMatrix, partColor);
                 }
                 
@@ -683,6 +692,26 @@ namespace VesselView
             }
             
             
+        }
+
+        /// <summary>
+        /// Renders a mesh. Doesnt work?
+        /// </summary>
+        /// <param name="transMatrix">Mesh transform.</param>
+        /// <param name="color">Color.</param>
+        private void renderMesh(Mesh mesh, Matrix4x4 transMatrix, Color color)
+        {
+            //setup GL
+            GL.PushMatrix();
+            GL.MultMatrix(transMatrix);
+            GL.Begin(GL.TRIANGLES);
+            GL.Color(color);
+            //and draw the triangles
+            //TODO: Maybe it doesnt have to be done in immediate mode?
+            //Unity GL doesnt seem to expose much, though.
+            Graphics.DrawMeshNow(mesh, transMatrix);
+            GL.End();
+            GL.PopMatrix();
         }
 
         /// <summary>
@@ -795,6 +824,16 @@ namespace VesselView
                     renderLine(rect.xMax, yMid, xMid, rect.yMax, screenMatrix);
                     renderLine(xMid, rect.yMax, rect.xMin, yMid, screenMatrix);
                     renderLine(rect.xMin, yMid, xMid, rect.yMin, screenMatrix);
+                    break;
+                case (int)ViewerConstants.ICONS.TRIANGLE_UP:
+                    renderLine(rect.xMin, rect.yMin, rect.xMax, rect.yMin, screenMatrix);
+                    renderLine(rect.xMax, rect.yMin, xMid, rect.yMax, screenMatrix);
+                    renderLine(xMid, rect.yMax, rect.xMin, rect.yMin, screenMatrix);
+                    break;
+                case (int)ViewerConstants.ICONS.TRIANGLE_DOWN:
+                    renderLine(rect.xMin, rect.yMax, rect.xMax, rect.yMax, screenMatrix);
+                    renderLine(rect.xMax, rect.yMax, xMid, rect.yMin, screenMatrix);
+                    renderLine(xMid, rect.yMin, rect.xMin, rect.yMax, screenMatrix);
                     break;
                 case (int)ViewerConstants.ICONS.ENGINE_READY:
                     renderLine(rect.xMin, rect.yMin, rect.xMax, rect.yMin, screenMatrix);

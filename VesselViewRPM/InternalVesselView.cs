@@ -48,13 +48,13 @@ namespace JSI.Handlers
         [KSPField]
         private int centeringModeRescaleNew = (int)ViewerConstants.RESCALEMODE.INCR;
         [KSPField]
-        private bool latencyMode = true;
+        private int latencyMode = (int)ViewerConstants.LATENCY.LOW;
         [KSPField]
         private float scaleFactor = 5;
         [KSPField]
-        public float scrOffX = 0;
+        public int scrOffX = 0;
         [KSPField]
-        public float scrOffY = 0;
+        public int scrOffY = 0;
         [KSPField]
         public bool partSelectMode = false;
         [KSPField]
@@ -214,29 +214,45 @@ namespace JSI.Handlers
             itemList.Add(new VViewSimpleMenuItem("Active: ", settings, "", "drawPlane"));
             for (int i = 0; i < ViewerConstants.PLANES.Length; i++) 
             {
-                itemList.Add(new VViewSimpleMenuItem(ViewerConstants.PLANES[i], settings, "drawPlane", "", i));
+                itemList.Add(new VViewSimpleMenuItem(ViewerConstants.PLANES[i], settings, "drawPlane", "", i, false));
             }
             VViewSimpleMenu orientationMENU = new VViewSimpleMenu(itemList.ToArray(), "Vessel orientation");
+
+            itemList.Clear();
+            itemList.Add(new VViewSimpleMenuItem("Up", settings, "scrOffY", "", 128, true));
+            itemList.Add(new VViewSimpleMenuItem("Down", settings, "scrOffY", "", -128, true));
+            itemList.Add(new VViewSimpleMenuItem("Left", settings, "scrOffX", "", 128, true));
+            itemList.Add(new VViewSimpleMenuItem("Right", settings, "scrOffX", "", -128, true));
+            VViewSimpleMenu manualMoveMENU = new VViewSimpleMenu(itemList.ToArray(), "Manual repositioning");
+
+            itemList.Clear();
+            itemList.Add(new VViewSimpleMenuItem("Autocentering:", settings, "autoCenter", "autoCenter"));
+            itemList.Add(new VViewSimpleMenuItem("Hor. root center:", settings, "centerOnRootH", "centerOnRootH"));
+            itemList.Add(new VViewSimpleMenuItem("Ver. root center:", settings, "centerOnRootV", "centerOnRootV"));
+            itemList.Add(new VViewSimpleMenuItem("Manual repositioning", manualMoveMENU));
+            VViewSimpleMenu positionMENU = new VViewSimpleMenu(itemList.ToArray(), "Vessel position");
+
+            manualMoveMENU.setRoot((IVViewMenu)positionMENU);
+
             itemList.Clear();
             itemList.Add(new VViewSimpleMenuItem("Active: ", settings, "", "spinAxis"));
             for (int i = 0; i < ViewerConstants.AXES.Length; i++)
             {
-                itemList.Add(new VViewSimpleMenuItem(ViewerConstants.AXES[i]+" axis", settings, "spinAxis", "", i));
+                itemList.Add(new VViewSimpleMenuItem(ViewerConstants.AXES[i] + " axis", settings, "spinAxis", "", i, false));
             }
             itemList.Add(new VViewSimpleMenuItem("Rotation speed:", settings, "spinSpeed", "spinSpeed"));
             VViewSimpleMenu rotationMENU = new VViewSimpleMenu(itemList.ToArray(), "Display autorotation");
             
             VViewSimpleMenuItem[] DCONItems = {
                 new VViewSimpleMenuItem("Vessel orientation",orientationMENU),
+                new VViewSimpleMenuItem("Vessel position",positionMENU),
+                new VViewSimpleMenuItem("Autoscaling:",settings,"centerRescale","centerRescale"),
                 new VViewSimpleMenuItem("Display autorotation",rotationMENU),
-                new VViewSimpleMenuItem("Autocentering:",settings,"autoCenter","autoCenter"),
-                new VViewSimpleMenuItem("A.c. scaling:",settings,"centerRescale","centerRescale"),
-                new VViewSimpleMenuItem("Hor. pod center:",settings,"centerOnRootH","centerOnRootH"),
-                new VViewSimpleMenuItem("Ver. pod center:",settings,"centerOnRootV","centerOnRootV"),
                                       };
             VViewSimpleMenu displayConfigMENU = new VViewSimpleMenu(DCONItems, "Display configuration");
 
             orientationMENU.setRoot((IVViewMenu)displayConfigMENU);
+            positionMENU.setRoot((IVViewMenu)displayConfigMENU);
             rotationMENU.setRoot((IVViewMenu)displayConfigMENU); 
 
             /***************************************************************************************************/
@@ -246,7 +262,7 @@ namespace JSI.Handlers
             itemList.Add(new VViewSimpleMenuItem("Active: ", settings, "", "colorModeFill"));
             for (int i = 0; i < ViewerConstants.COLORMODES.Length; i++)
             {
-                itemList.Add(new VViewSimpleMenuItem(ViewerConstants.COLORMODES[i], settings, "colorModeFill", "", i));
+                itemList.Add(new VViewSimpleMenuItem(ViewerConstants.COLORMODES[i], settings, "colorModeFill", "", i, false));
             }
             VViewSimpleMenu passiveDisplayFillMENU = new VViewSimpleMenu(itemList.ToArray(), "Passive display (wire)");
             itemList.Clear();
@@ -254,7 +270,7 @@ namespace JSI.Handlers
             itemList.Add(new VViewSimpleMenuItem("Active: ", settings, "", "colorModeMesh"));
             for (int i = 0; i < ViewerConstants.COLORMODES.Length; i++)
             {
-                itemList.Add(new VViewSimpleMenuItem(ViewerConstants.COLORMODES[i], settings, "colorModeMesh", "", i));
+                itemList.Add(new VViewSimpleMenuItem(ViewerConstants.COLORMODES[i], settings, "colorModeMesh", "", i, false));
             }
             VViewSimpleMenu passiveDisplayWireMENU = new VViewSimpleMenu(itemList.ToArray(), "Passive display (wire)");
             itemList.Clear();
@@ -262,7 +278,7 @@ namespace JSI.Handlers
             itemList.Add(new VViewSimpleMenuItem("Active: ", settings, "", "colorModeBox"));
             for (int i = 0; i < ViewerConstants.COLORMODES.Length; i++)
             {
-                itemList.Add(new VViewSimpleMenuItem(ViewerConstants.COLORMODES[i], settings, "colorModeBox", "", i));
+                itemList.Add(new VViewSimpleMenuItem(ViewerConstants.COLORMODES[i], settings, "colorModeBox", "", i, false));
             }
             VViewSimpleMenu passiveDisplayBoundsMENU = new VViewSimpleMenu(itemList.ToArray(), "Passive display (mesh)");
 
