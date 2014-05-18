@@ -122,21 +122,41 @@ namespace VesselView
 
                 //clear the texture
                 GL.Clear(true, true, Color.black);
-                //turn on wireframe, since triangles would get filled othershipwise
-                GL.wireframe = true;
+                
                 //set up the screen position and scaling matrix
                 Matrix4x4 matrix = Matrix4x4.TRS(new Vector3(settings.scrOffX, settings.scrOffY, 0), Quaternion.identity, new Vector3(settings.scaleFact, settings.scaleFact, 1));
                 //dunno what this does, but I trust in the stolen codes
                 lineMaterial.SetPass(0);
 
-                
+                if (!settings.partSelectMode) 
+                {
+                    while (partQueue.Count > 0)
+                    {
+                        Part next = partQueue.Dequeue();
+                        if (next != null)
+                        {
+                            renderPart(next, matrix, true);
+                        }
+                    }
+                }
+                GL.Clear(true, false, Color.black);
+                if (partQueue.Count == 0)
+                {
+                    if (!settings.ship.isEVA)
+                    {
+                        partQueue.Enqueue(settings.ship.rootPart);
+                    }
+                }
+                //lineMaterial.SetPass(1);
+                //turn on wireframe, since triangles would get filled othershipwise
+                GL.wireframe = true;
                 //now render each part (assumes root part is in the queue)
                 while (partQueue.Count > 0)
                 {
                     Part next = partQueue.Dequeue();
                     if (next != null)
                     {
-                        renderPart(next, matrix);
+                        renderPart(next, matrix, false);
                     }
                 }
                 //now render engine exhaust indicators
@@ -158,7 +178,7 @@ namespace VesselView
                 {
                     renderCOM(matrix);
                 }
-                if (settings.displayGround)
+                if (settings.displayGround != (int)ViewerConstants.GROUND_DISPMODE.OFF)
                 {
                     //first, render the ground
                     renderGround(matrix);
@@ -187,38 +207,14 @@ namespace VesselView
             {
                 if (part.Modules.Contains("ModuleEngines")) 
                 {
-                    PartModule engineModule = part.Modules["ModuleEngines"];
-                    string transformName = "";
-                    foreach (BaseField fieldInList in engineModule.Fields)
-                    {
-                        if (fieldInList.name.Equals("thrustVectorTransformName"))
-                        {
-                            transformName = (string)fieldInList.GetValue(engineModule);
-                            break;
-                        }
-                    }
-                    if (transformName.Equals("")) continue;
+                    ModuleEngines engineModule = (ModuleEngines)part.Modules["ModuleEngines"];
+                    string transformName = engineModule.thrustVectorTransformName;
+
                     //MonoBehaviour.print("Found an engine with a transform");
-                    Transform thrustTransform = part.FindModelTransform(transformName);
-                    Matrix4x4 transMatrix = genTransMatrix(thrustTransform, settings.ship, true);
+                    
                     float scale = 0;
-                    float maxThrust = float.PositiveInfinity;
-                    foreach (BaseField fieldInList in engineModule.Fields)
-                    {
-                        if (fieldInList.name.Equals("maxThrust"))
-                        {
-                            maxThrust = (float)fieldInList.GetValue(engineModule);
-                            break;
-                        }
-                    }
-                    foreach (BaseField fieldInList in engineModule.Fields)
-                    {
-                        if (fieldInList.name.Equals("finalThrust"))
-                        {
-                            scale = (float)fieldInList.GetValue(engineModule)/maxThrust;
-                            break;
-                        }
-                    }
+                    float maxThrust = engineModule.maxThrust;
+                    scale = engineModule.finalThrust / maxThrust;
                     bool Found_LiquidFuel = false;
                     bool Found_ElectricCharge = false;
                     bool Found_IntakeAir = false;
@@ -267,30 +263,38 @@ namespace VesselView
                             if (propellant.isDeprived) Deprived_ElectricCharge = true;
                         }
                     }
+
+                    Matrix4x4 transMatrix = genTransMatrix(part.partTransform, settings.ship, true);
                     //if online, render exhaust
                     if (scale > 0.01f) 
                     {
-                        //default to magenta
-                        Color color = Color.magenta;
+                        if (!transformName.Equals(""))
+                        {
+                            Transform thrustTransform = part.FindModelTransform(transformName);
+                            transMatrix = genTransMatrix(thrustTransform, settings.ship, true);
+                            //default to magenta
+                            Color color = Color.magenta;
                             //liquid fuel engines
-                        if (Found_LiquidFuel & Found_Oxidizer) color = new Color(1, 0.5f, 0);
+                            if (Found_LiquidFuel & Found_Oxidizer) color = new Color(1, 0.5f, 0);
                             //air breathing engines
-                        else if (Found_LiquidFuel & Found_IntakeAir) color = new Color(0.9f, 0.7f, 0.8f);
+                            else if (Found_LiquidFuel & Found_IntakeAir) color = new Color(0.9f, 0.7f, 0.8f);
                             //ion engines
-                        else if (Found_XenonGas & Found_ElectricCharge) color = new Color(0f, 0.5f, 1f);
+                            else if (Found_XenonGas & Found_ElectricCharge) color = new Color(0f, 0.5f, 1f);
                             //monoprop engines
-                        else if (Found_MonoPropellant) color = new Color(0.9f, 0.9f, 0.9f);
-                        scale *= part.mass;
-                        renderCone(thrustTransform, scale, part.mass, screenMatrix, color);
+                            else if (Found_MonoPropellant) color = new Color(0.9f, 0.9f, 0.9f);
+                            scale *= part.mass;
+                            renderCone(thrustTransform, scale, part.mass, screenMatrix, color);
 
-                        Vector3 v = new Vector3(0, 0, scale + part.mass);
-                        v = transMatrix.MultiplyPoint3x4(v);
-                        if (v.x < minVecG.x) minVecG.x = v.x;
-                        if (v.y < minVecG.y) minVecG.y = v.y;
-                        if (v.z < minVecG.z) minVecG.z = v.z;
-                        if (v.x > maxVecG.x) maxVecG.x = v.x;
-                        if (v.y > maxVecG.y) maxVecG.y = v.y;
-                        if (v.z > maxVecG.z) maxVecG.z = v.z;
+                            Vector3 v = new Vector3(0, 0, scale + part.mass);
+                            v = transMatrix.MultiplyPoint3x4(v);
+                            if (v.x < minVecG.x) minVecG.x = v.x;
+                            if (v.y < minVecG.y) minVecG.y = v.y;
+                            if (v.z < minVecG.z) minVecG.z = v.z;
+                            if (v.x > maxVecG.x) maxVecG.x = v.x;
+                            if (v.y > maxVecG.y) maxVecG.y = v.y;
+                            if (v.z > maxVecG.z) maxVecG.z = v.z;
+                        }
+                        
                     }
                     //render icon
                     float div = 6 / settings.scaleFact;
@@ -307,7 +311,7 @@ namespace VesselView
                         renderIcon(new Rect(-div + posStr.x, -div + posStr.y, 2 * div, 2 * div), screenMatrix, new Color(1,0.5f,0), (int)ViewerConstants.ICONS.ENGINE_ACTIVE);
                     else 
                         {
-                            if(!((ModuleEngines)engineModule).isOperational)
+                            if(!engineModule.isOperational)
                                 renderIcon(new Rect(-div + posStr.x, -div + posStr.y, 2 * div, 2 * div), screenMatrix, Color.yellow, (int)ViewerConstants.ICONS.ENGINE_INACTIVE);
                             else
                                 renderIcon(new Rect(-div + posStr.x, -div + posStr.y, 2 * div, 2 * div), screenMatrix, Color.green, (int)ViewerConstants.ICONS.ENGINE_READY);
@@ -346,7 +350,7 @@ namespace VesselView
             Vector3d upUnit = (position - settings.ship.mainBody.position).normalized;
             Vector3 groundDir = position + upUnit;
             //Quaternion lookAt = Quaternion.LookRotation(upUnit).Inverse();
-            MonoBehaviour.print("upUnit "+upUnit);
+            //MonoBehaviour.print("upUnit "+upUnit);
             Matrix4x4 worldToLocal = settings.ship.vesselTransform.worldToLocalMatrix;
             Vector3 localSpaceNormal = worldToLocal.MultiplyPoint3x4(groundDir);
             Vector3 perp1;
@@ -357,9 +361,9 @@ namespace VesselView
             perp1 = perp1.normalized;
             Vector3 perp2 = Vector3.Cross(localSpaceNormal+perp1, localSpaceNormal);
             perp2 = perp2.normalized;
-            MonoBehaviour.print("localSpaceNormal " + localSpaceNormal);
-            MonoBehaviour.print("perp1 " + perp1);
-            MonoBehaviour.print("perp2 " + perp2);
+            //MonoBehaviour.print("localSpaceNormal " + localSpaceNormal);
+            //MonoBehaviour.print("perp1 " + perp1);
+            //MonoBehaviour.print("perp2 " + perp2);
             //Vector3 worldSpaceNormal = settings.ship.vesselTransform.localToWorldMatrix.MultiplyPoint3x4(groundDir);
             double altitude = settings.ship.altitude-settings.ship.terrainAltitude;
             if (altitude > ViewerConstants.MAX_ALTITUDE) return;
@@ -397,8 +401,12 @@ namespace VesselView
             /*Quaternion rot = Quaternion.FromToRotation(groundN, Vector3.up);
             Quaternion rotInv = Quaternion.FromToRotation(Vector3.up, groundN);*/
             float angle = Vector3.Angle(Vector3.up, localSpaceNormal);
+            if (settings.displayGround == (int)ViewerConstants.GROUND_DISPMODE.PLANE) 
+            {
+                angle = Vector3.Angle(Vector3.back, localSpaceNormal);
+            }
             if (angle > 40) angle = 40;
-            MonoBehaviour.print("angle> " + angle);
+            //MonoBehaviour.print("angle> " + angle);
             Color color = genFractColor(1-(angle / 40f));
             //transMatrix = screenMatrix * transMatrix;
             //now render it
@@ -525,7 +533,7 @@ namespace VesselView
         /// </summary>
         /// <param name="part">Part to render</param>
         /// <param name="scrnMatrix">Screen transform</param>
-        private void renderPart(Part part, Matrix4x4 scrnMatrix)
+        private void renderPart(Part part, Matrix4x4 scrnMatrix, bool fill)
         {
             //first off, add all the parts children to the queue
             foreach (Part child in part.children)
@@ -542,7 +550,8 @@ namespace VesselView
 
             if (!settings.partSelectMode)
             {
-                partColor = getPartColor(part, settings.colorModeMesh);
+                if (!fill)  partColor = getPartColor(part, settings.colorModeMesh);
+                else        partColor = getPartColor(part, settings.colorModeFill);
                 boxColor = getPartColor(part, settings.colorModeBox);
             }
             else {
@@ -554,12 +563,25 @@ namespace VesselView
                 boxColor.g = boxColor.g / 2;
                 boxColor.b = boxColor.b / 2;
             }
-            if (settings.colorModeMeshDull)
+            if (fill) 
             {
-                partColor.r = partColor.r / 2;
-                partColor.g = partColor.g / 2;
-                partColor.b = partColor.b / 2;
+                if (settings.colorModeFillDull)
+                {
+                    partColor.r = partColor.r / 2;
+                    partColor.g = partColor.g / 2;
+                    partColor.b = partColor.b / 2;
+                }
             }
+            else 
+            {
+                if (settings.colorModeMeshDull)
+                {
+                    partColor.r = partColor.r / 2;
+                    partColor.g = partColor.g / 2;
+                    partColor.b = partColor.b / 2;
+                }
+            }
+            
             //now we need to get all meshes in the part
             List<MeshFilter> meshFList = new List<MeshFilter>();
             foreach (MeshFilter mf in part.transform.GetComponentsInChildren<MeshFilter>())
@@ -588,7 +610,8 @@ namespace VesselView
                         updateMinMax(mesh.bounds, transMatrix, ref minVec, ref maxVec);
                         transMatrix = scrnMatrix * transMatrix;
                         //now render it
-                        renderMesh(mesh.triangles, mesh.vertices, transMatrix, partColor);
+                        if(!partColor.Equals(Color.black))
+                            renderMesh(mesh.triangles, mesh.vertices, transMatrix, partColor);
                     }
                 }
             }
@@ -606,7 +629,8 @@ namespace VesselView
                     updateMinMax(bakedMesh.bounds, transMatrix, ref minVec, ref maxVec);
                     transMatrix = scrnMatrix * transMatrix;
                     //now render it
-                    renderMesh(bakedMesh.triangles, bakedMesh.vertices, transMatrix, partColor);
+                    if (!partColor.Equals(Color.black))
+                        renderMesh(bakedMesh.triangles, bakedMesh.vertices, transMatrix, partColor);
                 }
                 
             }
@@ -652,9 +676,13 @@ namespace VesselView
                 if (maxVecG.y < maxVec.y) maxVecG.y = maxVec.y;
                 if (maxVecG.z < maxVec.z) maxVecG.z = maxVec.z;
             }
-
-            //and draw a box around the part (later)
-            rectQueue.Enqueue(new ViewerConstants.RectColor(new Rect((minVec.x), (minVec.y), (maxVec.x - minVec.x), (maxVec.y - minVec.y)), boxColor));
+            if (!fill) 
+            {
+                //and draw a box around the part (later)
+                rectQueue.Enqueue(new ViewerConstants.RectColor(new Rect((minVec.x), (minVec.y), (maxVec.x - minVec.x), (maxVec.y - minVec.y)), boxColor));
+            }
+            
+            
         }
 
         /// <summary>

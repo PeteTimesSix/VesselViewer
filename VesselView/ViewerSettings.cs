@@ -5,16 +5,19 @@ namespace VesselView
     public class ViewerSettings
     {
         //settings
+        public int colorModeFill = (int)ViewerConstants.COLORMODE.FUEL;
         public int colorModeMesh = (int)ViewerConstants.COLORMODE.NONE;
         public int colorModeBox = (int)ViewerConstants.COLORMODE.HIDE;
-        public bool colorModeMeshDull = true;
+        public bool colorModeFillDull = true;
+        public bool colorModeMeshDull = false;
         public bool colorModeBoxDull = false;
         public bool centerOnRootH = true;
         public bool centerOnRootV = false;
         public bool displayCOM = true;
         public bool displayEngines = true;
-        public bool displayGround = true;
         public bool displayAxes = false;
+
+        public int displayGround = (int)ViewerConstants.GROUND_DISPMODE.ROCKET;
         //public bool displayCOP = true;
 
         public int centerRescale = (int)ViewerConstants.RESCALEMODE.INCR;
@@ -29,6 +32,7 @@ namespace VesselView
         public int spinAxis = (int)ViewerConstants.AXIS.Y;
         public int spinSpeed = 0;
 
+        public int displayGroundMAX = ViewerConstants.RESCALEMODES.Length;
         public int centerRescaleMAX = ViewerConstants.RESCALEMODES.Length;
         public int colorModeMeshMAX = ViewerConstants.COLORMODES.Length;
         public int colorModeBoxMAX = ViewerConstants.COLORMODES.Length;
@@ -295,6 +299,8 @@ namespace VesselView
 
             switch (propertyName) 
             {
+                case "colorModeFill":
+                    return ViewerConstants.COLORMODES[colorModeFill];
                 case "colorModeMesh":
                     return ViewerConstants.COLORMODES[colorModeMesh];
                 case "colorModeBox":
@@ -308,7 +314,7 @@ namespace VesselView
                 case "displayEngines":
                     return boolAsString(displayEngines);
                 case "displayGround":
-                    return boolAsString(displayGround);
+                    return ViewerConstants.GROUND_DISPMODES[displayGround];
                 case "displayAxes":
                     return boolAsString(displayAxes);
                 /*case "displayCOP":
@@ -322,7 +328,9 @@ namespace VesselView
                 case "drawPlane":
                     return ViewerConstants.PLANES[drawPlane];
                 case "scalePos":
-                    return ViewerConstants.SCALE_FACTS[scalePos]+" predefined";
+                    return ViewerConstants.SCALE_FACTS[scalePos] + " predefined";
+                case "colorModeFillDull":
+                    return boolAsString(colorModeFillDull);
                 case "colorModeBoxDull":
                     return boolAsString(colorModeBoxDull);
                 case "colorModeMeshDull":

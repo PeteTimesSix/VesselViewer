@@ -28,11 +28,15 @@ namespace JSI.Handlers
         //(you hear that? thats the sound of every fiber of programmer
         //knowledge in me screaming YOURE WASTING MEMORY YOU LUNATIC)
         [KSPField]
+        private int colorModeFill = (int)ViewerConstants.COLORMODE.HIDE;
+        [KSPField]
         private int colorModeMesh = (int)ViewerConstants.COLORMODE.NONE;
         [KSPField]
         private int colorModeBox = (int)ViewerConstants.COLORMODE.HIDE;
         [KSPField]
-        private bool colorModeMeshDull = true;
+        private bool colorModeFillDull = true;
+        [KSPField]
+        private bool colorModeMeshDull = false;
         [KSPField]
         private bool colorModeBoxDull = false;
         [KSPField]
@@ -44,7 +48,7 @@ namespace JSI.Handlers
         [KSPField]
         private int centeringModeRescaleNew = (int)ViewerConstants.RESCALEMODE.INCR;
         [KSPField]
-        private bool latencyMode = false;
+        private bool latencyMode = true;
         [KSPField]
         private float scaleFactor = 5;
         [KSPField]
@@ -66,7 +70,7 @@ namespace JSI.Handlers
         [KSPField]
         public bool displayCOM = true;
         [KSPField]
-        public bool displayGround = true;
+        public int displayGround = (int)ViewerConstants.GROUND_DISPMODE.ROCKET;
         [KSPField]
         public bool displayAxes = false;
 
@@ -171,9 +175,11 @@ namespace JSI.Handlers
             //Im not entirely sure why I still insist on keeping 
             //the RPM version and the standalone separate
             //but as long as I do, I have to keep the configuration plugin-side
+            settings.colorModeFill = colorModeFill; 
             settings.colorModeMesh = colorModeMesh;
             settings.colorModeBox = colorModeBox;
             settings.colorModeMeshDull = colorModeMeshDull;
+            settings.colorModeFillDull = colorModeFillDull;
             settings.colorModeBoxDull = colorModeBoxDull;
             settings.centerOnRootH = centerOnRootH;
             settings.centerOnRootV = centerOnRootV;
@@ -227,8 +233,6 @@ namespace JSI.Handlers
                 new VViewSimpleMenuItem("A.c. scaling:",settings,"centerRescale","centerRescale"),
                 new VViewSimpleMenuItem("Hor. pod center:",settings,"centerOnRootH","centerOnRootH"),
                 new VViewSimpleMenuItem("Ver. pod center:",settings,"centerOnRootV","centerOnRootV"),
-                new VViewSimpleMenuItem("Dull bounds:",settings,"colorModeBoxDull","colorModeBoxDull"),
-                new VViewSimpleMenuItem("Dull mesh:",settings,"colorModeMeshDull","colorModeMeshDull"),
                                       };
             VViewSimpleMenu displayConfigMENU = new VViewSimpleMenu(DCONItems, "Display configuration");
 
@@ -236,8 +240,17 @@ namespace JSI.Handlers
             rotationMENU.setRoot((IVViewMenu)displayConfigMENU); 
 
             /***************************************************************************************************/
-            
             itemList.Clear();
+            
+            itemList.Add(new VViewSimpleMenuItem("Color dull:",settings,"colorModeFillDull","colorModeFillDull"));
+            itemList.Add(new VViewSimpleMenuItem("Active: ", settings, "", "colorModeFill"));
+            for (int i = 0; i < ViewerConstants.COLORMODES.Length; i++)
+            {
+                itemList.Add(new VViewSimpleMenuItem(ViewerConstants.COLORMODES[i], settings, "colorModeFill", "", i));
+            }
+            VViewSimpleMenu passiveDisplayFillMENU = new VViewSimpleMenu(itemList.ToArray(), "Passive display (wire)");
+            itemList.Clear();
+            itemList.Add(new VViewSimpleMenuItem("Color dull:", settings, "colorModeMeshDull", "colorModeMeshDull"));
             itemList.Add(new VViewSimpleMenuItem("Active: ", settings, "", "colorModeMesh"));
             for (int i = 0; i < ViewerConstants.COLORMODES.Length; i++)
             {
@@ -245,14 +258,16 @@ namespace JSI.Handlers
             }
             VViewSimpleMenu passiveDisplayWireMENU = new VViewSimpleMenu(itemList.ToArray(), "Passive display (wire)");
             itemList.Clear();
+            itemList.Add(new VViewSimpleMenuItem("Color dull:", settings, "colorModeBoxDull", "colorModeBoxDull"));
             itemList.Add(new VViewSimpleMenuItem("Active: ", settings, "", "colorModeBox"));
             for (int i = 0; i < ViewerConstants.COLORMODES.Length; i++)
             {
                 itemList.Add(new VViewSimpleMenuItem(ViewerConstants.COLORMODES[i], settings, "colorModeBox", "", i));
             }
-            VViewSimpleMenu passiveDisplayBoundsMENU = new VViewSimpleMenu(itemList.ToArray(), "Passive display (wire)");
+            VViewSimpleMenu passiveDisplayBoundsMENU = new VViewSimpleMenu(itemList.ToArray(), "Passive display (mesh)");
 
             VViewSimpleMenuItem[] PASItems = {
+                new VViewSimpleMenuItem("Passive display (mesh)",passiveDisplayFillMENU),
                 new VViewSimpleMenuItem("Passive display (wire)",passiveDisplayWireMENU),
                 new VViewSimpleMenuItem("Passive display (bounds)",passiveDisplayBoundsMENU),
                 new VViewSimpleMenuItem("Display axes:",settings,"displayAxes","displayAxes"),
@@ -262,6 +277,7 @@ namespace JSI.Handlers
                                       };
             VViewSimpleMenu passiveDisplaysMENU = new VViewSimpleMenu(PASItems, "Passive display modes");
 
+            passiveDisplayFillMENU.setRoot((IVViewMenu)passiveDisplaysMENU);
             passiveDisplayWireMENU.setRoot((IVViewMenu)passiveDisplaysMENU);
             passiveDisplayBoundsMENU.setRoot((IVViewMenu)passiveDisplaysMENU);
 

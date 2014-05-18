@@ -32,6 +32,12 @@ namespace VesselView
         public static readonly string[] SPIN_SPEEDS = {"None", "Slow", "Medium", "Fast" };
         public static readonly float[] SPIN_SPEED_VAL = {0, 4, 12, 32};
 
+        public static readonly string[] GROUND_DISPMODES = { "Off", "Rocket", "Plane" };
+        public enum GROUND_DISPMODE 
+        {
+            OFF, ROCKET, PLANE 
+        }
+
         public static readonly string[] COLORMODES = { "White", "State", "Stage", "Heat", "Resources","Drag", "Lift", "Stall", "Hide" };
         public enum COLORMODE
         {
