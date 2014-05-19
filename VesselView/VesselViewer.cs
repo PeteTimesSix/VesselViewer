@@ -101,7 +101,15 @@ namespace VesselView
             {
                 partQueue.Enqueue(settings.ship.rootPart);
             }
-            renderToTexture(screen);
+            try
+            {
+                renderToTexture(screen);
+            }
+            catch (Exception e) 
+            {
+                MonoBehaviour.print("Exception " + e + " during drawing");
+            }
+            GL.wireframe = false;
             partQueue.Clear();
         }
 
@@ -169,11 +177,7 @@ namespace VesselView
                 //now render engine exhaust indicators
                 if (settings.displayEngines)
                 {
-                    try
-                    {
-                        renderEngineThrusts(matrix);
-                    }
-                    catch (Exception e) { MonoBehaviour.print("Exception in engine thrusts"); }
+                    renderEngineThrusts(matrix);
                 }
                 //now render the bounding boxes (so theyre on top)
                 if (settings.colorModeBox != (int)ViewerConstants.COLORMODE.HIDE)
