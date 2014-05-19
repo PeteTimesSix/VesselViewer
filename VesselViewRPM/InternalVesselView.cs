@@ -28,15 +28,15 @@ namespace JSI.Handlers
         //(you hear that? thats the sound of every fiber of programmer
         //knowledge in me screaming YOURE WASTING MEMORY YOU LUNATIC)
         [KSPField]
-        private int colorModeFill = (int)ViewerConstants.COLORMODE.HIDE;
+        private int colorModeFill = (int)ViewerConstants.COLORMODE.FUEL;
         [KSPField]
         private int colorModeMesh = (int)ViewerConstants.COLORMODE.NONE;
         [KSPField]
         private int colorModeBox = (int)ViewerConstants.COLORMODE.HIDE;
         [KSPField]
-        private bool colorModeFillDull = true;
+        private bool colorModeFillDull = false;
         [KSPField]
-        private bool colorModeMeshDull = false;
+        private bool colorModeMeshDull = true;
         [KSPField]
         private bool colorModeBoxDull = false;
         [KSPField]

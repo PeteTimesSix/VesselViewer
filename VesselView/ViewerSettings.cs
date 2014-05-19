@@ -8,8 +8,8 @@ namespace VesselView
         public int colorModeFill = (int)ViewerConstants.COLORMODE.FUEL;
         public int colorModeMesh = (int)ViewerConstants.COLORMODE.NONE;
         public int colorModeBox = (int)ViewerConstants.COLORMODE.HIDE;
-        public bool colorModeFillDull = true;
-        public bool colorModeMeshDull = false;
+        public bool colorModeFillDull = false;
+        public bool colorModeMeshDull = true;
         public bool colorModeBoxDull = false;
         public bool centerOnRootH = true;
         public bool centerOnRootV = false;

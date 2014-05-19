@@ -56,6 +56,7 @@ namespace VesselView
         {
             //setup the style
             GUIStyle mySty = new GUIStyle(GUI.skin.button);
+            GUIStyle myStyL = new GUIStyle(GUI.skin.label);
             mySty.normal.textColor = mySty.focused.textColor = Color.white;
             mySty.hover.textColor = mySty.active.textColor = Color.yellow;
             mySty.onNormal.textColor = mySty.onFocused.textColor = mySty.onHover.textColor = mySty.onActive.textColor = Color.green;
@@ -70,29 +71,49 @@ namespace VesselView
             {
                 //and now, buttons. lots of buttons.
                 GUILayout.BeginHorizontal();
-                if (GUILayout.Button("Plane:" + ViewerConstants.PLANES[settings.drawPlane], mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
+                GUILayout.Label("Display configuration", myStyL, GUILayout.ExpandWidth(true));
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button("Orientation:" + ViewerConstants.PLANES[settings.drawPlane], mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
                 {
                     settings.drawPlane++;
                     if (settings.drawPlane == ViewerConstants.PLANES.Length) settings.drawPlane = 0;
                 }
-                if (GUILayout.Button("Automate:" + settings.autoCenter, mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
+                if (GUILayout.Button("Autocentering:" + settings.autoCenter, mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
                 {
                     settings.autoCenter = !settings.autoCenter;
                 }
-                if (GUILayout.Button("Scale:" + settings.scaleFact, mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
+                if (GUILayout.Button("Hor. root center:" + settings.centerOnRootH, mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
+                {
+                    settings.centerOnRootH = !settings.centerOnRootH;
+                }
+                if (GUILayout.Button("Ver. root center:" + settings.centerOnRootV, mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
+                {
+                    settings.centerOnRootV = !settings.centerOnRootV;
+                }
+                if (GUILayout.Button("Autoscaling:" + ViewerConstants.RESCALEMODES[settings.centerRescale], mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
+                {
+                    settings.centerRescale++;
+                    if (settings.centerRescale == settings.centerRescaleMAX) settings.centerRescale = 0;
+                }
+
+                /*if (GUILayout.Button("Scale:" + settings.scaleFact, mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
                 {
                     settings.scalePos++;
                     if (settings.scalePos == ViewerConstants.SCALE_FACTS.Length) settings.scalePos = 0;
                     //scrOffX = OFFX_DEF + (int)((scrOffX - OFFX_DEF) / (settings.scaleFact / SCALE_FACTS[settings.scalePos]));
                     //scrOffY = OFFY_DEF + (int)((scrOffY - OFFY_DEF) / (settings.scaleFact / SCALE_FACTS[settings.scalePos]));
                     settings.scaleFact = ViewerConstants.SCALE_FACTS[settings.scalePos];
-                }
+                }*/
 
                 GUILayout.EndHorizontal();
-                GUILayout.BeginHorizontal();
 
                 if (!settings.autoCenter)
                 {
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label("Manual positioning", myStyL, GUILayout.ExpandWidth(true));
+                    GUILayout.EndHorizontal();
+                    GUILayout.BeginHorizontal();
                     if (GUILayout.Button("Up", mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
                     {
                         viewer.manuallyOffset(0, ViewerConstants.OFFSET_MODS[settings.scalePos]);
@@ -112,43 +133,74 @@ namespace VesselView
                     if (GUILayout.Button("Center", mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
                     {
                         viewer.nilOffset(screen.width, screen.height);
-                    }
+                    } 
+                    GUILayout.EndHorizontal();
                 }
-                else
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button("Autorotation axis:" + ViewerConstants.AXES[settings.spinAxis], mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
                 {
-                    if (GUILayout.Button("Center hor. on root:" + settings.centerOnRootH, mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
-                    {
-                        settings.centerOnRootH = !settings.centerOnRootH;
-                    }
-                    if (GUILayout.Button("Center ver. on root:" + settings.centerOnRootV, mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
-                    {
-                        settings.centerOnRootV = !settings.centerOnRootV;
-                    }
-                    if (GUILayout.Button("Autorescale:" + settings.centerRescale, mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
-                    {
-                        settings.centerRescale++;
-                        if (settings.centerRescale == ViewerConstants.RESCALEMODES.Length) settings.centerRescale = 0;
-                    }
+                    settings.spinAxis++;
+                    if (settings.spinAxis == settings.spinAxisMAX) settings.spinAxis = 0;
                 }
-
-
+                if (GUILayout.Button("Autorotation speed:" + ViewerConstants.SPIN_SPEEDS[settings.spinSpeed], mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
+                {
+                    settings.spinSpeed++;
+                    if (settings.spinSpeed == settings.spinSpeedMAX) settings.spinSpeed = 0;
+                }
                 GUILayout.EndHorizontal();
                 GUILayout.BeginHorizontal();
-                if (GUILayout.Button("B.Box color mode:" + ViewerConstants.COLORMODES[settings.colorModeBox], mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
+                GUILayout.Label("Draw modes", myStyL, GUILayout.ExpandWidth(true));
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button("Mesh:" + ViewerConstants.COLORMODES[settings.colorModeFill], mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
                 {
-                    settings.colorModeBox++;
-                    if (settings.colorModeBox == ViewerConstants.COLORMODES.Length) settings.colorModeBox = 0;
+                    settings.colorModeFill++;
+                    if (settings.colorModeFill == ViewerConstants.COLORMODES.Length) settings.colorModeFill = 0;
                 }
-                if (GUILayout.Button("Mesh color mode:" + ViewerConstants.COLORMODES[settings.colorModeMesh], mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
+                if (GUILayout.Button("Dull:" + settings.colorModeFillDull, mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
+                {
+                    settings.colorModeFillDull = !settings.colorModeFillDull;
+                }
+                if (GUILayout.Button("Wire:" + ViewerConstants.COLORMODES[settings.colorModeMesh], mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
                 {
                     settings.colorModeMesh++;
                     if (settings.colorModeMesh == ViewerConstants.COLORMODES.Length) settings.colorModeMesh = 0;
                 }
-                if (GUILayout.Button("Latency Mode:" + ViewerConstants.LATENCIES[settings.latency], mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
+                if (GUILayout.Button("Dull:" + settings.colorModeMeshDull, mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
                 {
-                    settings.latency++;
-                    if (settings.latency == settings.latencyMAX) settings.latency = 0;
+                    settings.colorModeMeshDull = !settings.colorModeMeshDull;
                 }
+                if (GUILayout.Button("Bounds:" + ViewerConstants.COLORMODES[settings.colorModeBox], mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
+                {
+                    settings.colorModeBox++;
+                    if (settings.colorModeBox == ViewerConstants.COLORMODES.Length) settings.colorModeBox = 0;
+                }
+                if (GUILayout.Button("Dull:" + settings.colorModeBoxDull, mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
+                {
+                    settings.colorModeBoxDull = !settings.colorModeBoxDull;
+                }
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button("Axes:" + settings.displayAxes, mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
+                {
+                    settings.displayAxes = !settings.displayAxes;
+                }
+                if (GUILayout.Button("Center of mass:" + settings.displayCOM, mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
+                {
+                    settings.displayCOM = !settings.displayCOM;
+                }
+                if (GUILayout.Button("Engine status:" + settings.displayEngines, mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
+                {
+                    settings.displayEngines = !settings.displayEngines;
+                }
+                if (GUILayout.Button("Landing assist:" + ViewerConstants.GROUND_DISPMODES[settings.displayGround], mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
+                {
+                    settings.displayGround++;
+                    if (settings.displayGround == settings.displayGroundMAX) settings.displayGround = 0;
+                }
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Other configuration", myStyL, GUILayout.ExpandWidth(true));
                 GUILayout.EndHorizontal();
                 GUILayout.BeginHorizontal();
                 if (GUILayout.Button("X size:" + screen.width, mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
@@ -163,7 +215,13 @@ namespace VesselView
                     if (scrnSizeYpos == ViewerConstants.SCREEN_SIZES.Length) scrnSizeYpos = 0;
                     setupTexture();
                 }
+                if (GUILayout.Button("Latency Mode:" + ViewerConstants.LATENCIES[settings.latency], mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
+                {
+                    settings.latency++;
+                    if (settings.latency == settings.latencyMAX) settings.latency = 0;
+                }
                 GUILayout.EndHorizontal();
+
             }
             GUI.DragWindow(new Rect(0, 0, 10000, 20));
         }
