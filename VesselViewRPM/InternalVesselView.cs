@@ -102,15 +102,23 @@ namespace JSI.Handlers
 
         public bool RenderViewer(RenderTexture screen, float cameraAspect)
         {
-            if (forceRedraw & textChanged) {
-                forceRedraw = false;
-                textChanged = false;
-                viewer.forceRedraw();
+            
+            if (settings.screenVisible) 
+            {
+                //MonoBehaviour.print("VV renderViewer method call");
+                //MonoBehaviour.print("VV render viewer call");
+                if (forceRedraw & textChanged)
+                {
+                    forceRedraw = false;
+                    textChanged = false;
+                    viewer.forceRedraw();
+                }
+                //MonoBehaviour.print("screen draw call");
+                viewer.drawCall(screen,true);
+                //MonoBehaviour.print("screen draw call done");
+                return true;
             }
-            //MonoBehaviour.print("screen draw call");
-            viewer.drawCall(screen);
-            //MonoBehaviour.print("screen draw call done");
-            return true;
+            return false;
         }
 
         public void ButtonProcessor(int buttonID)
@@ -160,6 +168,7 @@ namespace JSI.Handlers
         {
             if (!ready) Start();
             settings.screenVisible = active;
+            //MonoBehaviour.print("VV active status changed to " + active);
         }
 
         public void Start()

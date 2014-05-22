@@ -35,6 +35,9 @@ namespace VesselView
         private int stagesLastTime = 0;
         private int stagesThisTimeMax = 0;
 
+        private int lastFrameDrawn = 0;
+
+
         private static Mesh bakedMesh = new Mesh();
 
         public void nilOffset(int width, int height) {
@@ -51,35 +54,40 @@ namespace VesselView
             lastUpdate = Time.time - 1f;
         }
 
-        public void drawCall(RenderTexture screen) {
+        public void drawCall(RenderTexture screen, bool internalScreen) {
+            //MonoBehaviour.print("VV draw call");
             //Latency mode to limit to one frame per second if FPS is affected
             //also because it happens to look exactly like those NASA screens :3
+            int frameDiff = Time.frameCount - lastFrameDrawn;
             bool redraw = false;
             if (settings.latency == (int)ViewerConstants.LATENCY.OFF) redraw = true;
             else if (settings.latency == (int)ViewerConstants.LATENCY.LOW) 
             {
-                if (Time.frameCount % 3 == 0) redraw = true;
+                if (frameDiff >= 3) redraw = true;
             }
             else if (settings.latency == (int)ViewerConstants.LATENCY.MEDIUM)
             {
-                if (Time.frameCount % 10 == 0) redraw = true;
+                if (frameDiff >= 10) redraw = true;
             }
             else if (settings.latency == (int)ViewerConstants.LATENCY.HIGH)
             {
-                if (Time.frameCount % 30 == 0) redraw = true;
+                if (frameDiff >= 30) redraw = true;
             }
             else if (settings.latency == (int)ViewerConstants.LATENCY.TOOHIGH)
             {
-                if (Time.frameCount % 75 == 0) redraw = true;
+                if (frameDiff >= 75) redraw = true;
             }
             if (redraw) 
             {
+                lastFrameDrawn = Time.frameCount;
+                //MonoBehaviour.print("VV restarting draw, screen internal:"+internalScreen);
                 restartDraw(screen);
                 if (settings.autoCenter)
                 {
                     centerise(screen.width, screen.height);
                 }
             }
+            //MonoBehaviour.print("VV draw call done");
         }
 
         public VesselViewer() {
@@ -1209,6 +1217,7 @@ namespace VesselView
                     }
                     //now return the color 
                     //print("part " + part.name + " inv. stage " + part.inverseStage);
+                    if (part.inverseStage >= stageGradient.Length) return Color.magenta;
                     return stageGradient[part.inverseStage];
                 case (int)ViewerConstants.COLORMODE.HEAT:
                     //colors the part according to how close its to exploding due to overheat

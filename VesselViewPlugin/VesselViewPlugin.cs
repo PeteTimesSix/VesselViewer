@@ -299,7 +299,10 @@ namespace VesselView
         /// </summary>
         void Update()
         {
-            viewer.drawCall(screen);
+            if (settings.screenVisible) 
+            {
+                viewer.drawCall(screen, false);
+            }        
         }
 
 
