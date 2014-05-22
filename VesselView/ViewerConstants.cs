@@ -5,7 +5,7 @@ namespace VesselView
 {
     public class ViewerConstants
     {
-        public static string VERSION = "0.5"; 
+        public static string VERSION = "0.5.1"; 
         
         //predefined values for the settings
         public static readonly float[] SCALE_FACTS = { 5, 10, 15, 20, 30, 40, 75, 100, 150 };

@@ -216,29 +216,50 @@ namespace VesselView
         {
             foreach (Part part in settings.ship.parts) 
             {
-                if (part.Modules.Contains("ModuleEngines")) 
+                string transformName = null;
+                List<Propellant> propellants = null;
+                float maxThrust = 0;
+                float finalThrust = 0;
+                bool operational = false;
+                if (part.Modules.Contains("ModuleEngines"))
                 {
                     ModuleEngines engineModule = (ModuleEngines)part.Modules["ModuleEngines"];
-                    string transformName = engineModule.thrustVectorTransformName;
-
+                    transformName = engineModule.thrustVectorTransformName;
+                    propellants = engineModule.propellants;
+                    maxThrust = engineModule.maxThrust;
+                    finalThrust = engineModule.finalThrust;
+                    operational = engineModule.isOperational;
+                }
+                else if (part.Modules.Contains("ModuleEnginesFX"))
+                {
+                    ModuleEnginesFX engineModule = (ModuleEnginesFX)part.Modules["ModuleEnginesFX"];
+                    transformName = engineModule.thrustVectorTransformName;
+                    propellants = engineModule.propellants;
+                    maxThrust = engineModule.maxThrust;
+                    finalThrust = engineModule.finalThrust;
+                    operational = engineModule.isOperational;
+                }
+                
+                if (transformName!=null) 
+                {
                     //MonoBehaviour.print("Found an engine with a transform");
                     
                     float scale = 0;
-                    float maxThrust = engineModule.maxThrust;
-                    scale = engineModule.finalThrust / maxThrust;
+                    scale = finalThrust / maxThrust;
                     bool Found_LiquidFuel = false;
                     bool Found_ElectricCharge = false;
                     bool Found_IntakeAir = false;
                     bool Found_XenonGas = false;
                     bool Found_Oxidizer = false;
                     bool Found_MonoPropellant = false;
+                    bool Found_SolidFuel = false;
                     bool Deprived_LiquidFuel = false;
                     bool Deprived_ElectricCharge = false;
                     bool Deprived_IntakeAir = false;
                     bool Deprived_XenonGas = false;
                     bool Deprived_Oxidizer = false;
                     bool Deprived_MonoPropellant = false;
-                    List<Propellant> propellants =  ((ModuleEngines)engineModule).propellants;
+                    bool Deprived_SolidFuel = false;
                     //MonoBehaviour.print("Propellants for " + part.name);
                     foreach (Propellant propellant in propellants)
                     {
@@ -252,6 +273,11 @@ namespace VesselView
                         {
                             Found_Oxidizer = true;
                             if (propellant.isDeprived) Deprived_Oxidizer = true;
+                        }
+                        else if (propellant.name.Equals("SolidFuel"))
+                        {
+                            Found_SolidFuel = true;
+                            if (propellant.isDeprived) Deprived_SolidFuel = true;
                         }
                         else if (propellant.name.Equals("IntakeAir"))
                         {
@@ -287,14 +313,17 @@ namespace VesselView
                             Color color = Color.magenta;
                             //liquid fuel engines
                             if (Found_LiquidFuel & Found_Oxidizer) color = new Color(1, 0.5f, 0);
+                            //SRBs
+                            else if (Found_SolidFuel) color = new Color(1f, 0.1f, 0.1f);
                             //air breathing engines
                             else if (Found_LiquidFuel & Found_IntakeAir) color = new Color(0.9f, 0.7f, 0.8f);
                             //ion engines
                             else if (Found_XenonGas & Found_ElectricCharge) color = new Color(0f, 0.5f, 1f);
                             //monoprop engines
                             else if (Found_MonoPropellant) color = new Color(0.9f, 0.9f, 0.9f);
-                            scale *= part.mass;
-                            renderCone(thrustTransform, scale, part.mass, screenMatrix, color);
+                            float massSqrt = (float)Math.Sqrt(part.mass);
+                            scale *= massSqrt;
+                            renderCone(thrustTransform, scale, massSqrt, screenMatrix, color);
 
                             Vector3 v = new Vector3(0, 0, scale + part.mass);
                             v = transMatrix.MultiplyPoint3x4(v);
@@ -312,7 +341,7 @@ namespace VesselView
                     Vector3 posStr = new Vector3();
                     posStr = transMatrix.MultiplyPoint3x4(posStr);
                     //out of fuel
-                    if ((Found_LiquidFuel & Deprived_LiquidFuel) | (Found_MonoPropellant & Deprived_MonoPropellant) | (Found_XenonGas & Deprived_XenonGas) | (Found_Oxidizer & Deprived_Oxidizer))
+                    if ((Found_LiquidFuel & Deprived_LiquidFuel) | (Found_SolidFuel & Deprived_SolidFuel) | (Found_MonoPropellant & Deprived_MonoPropellant) | (Found_XenonGas & Deprived_XenonGas) | (Found_Oxidizer & Deprived_Oxidizer))
                         renderIcon(new Rect(-div + posStr.x, -div + posStr.y, 2 * div, 2 * div), screenMatrix, Color.red, (int)ViewerConstants.ICONS.ENGINE_NOFUEL);
                     else if ((Found_ElectricCharge & Deprived_ElectricCharge))
                         renderIcon(new Rect(-div + posStr.x, -div + posStr.y, 2 * div, 2 * div), screenMatrix, Color.cyan, (int)ViewerConstants.ICONS.ENGINE_NOPOWER);
@@ -322,7 +351,7 @@ namespace VesselView
                         renderIcon(new Rect(-div + posStr.x, -div + posStr.y, 2 * div, 2 * div), screenMatrix, new Color(1,0.5f,0), (int)ViewerConstants.ICONS.ENGINE_ACTIVE);
                     else 
                         {
-                            if(!engineModule.isOperational)
+                            if (!operational)
                                 renderIcon(new Rect(-div + posStr.x, -div + posStr.y, 2 * div, 2 * div), screenMatrix, Color.yellow, (int)ViewerConstants.ICONS.ENGINE_INACTIVE);
                             else
                                 renderIcon(new Rect(-div + posStr.x, -div + posStr.y, 2 * div, 2 * div), screenMatrix, Color.green, (int)ViewerConstants.ICONS.ENGINE_READY);
@@ -796,6 +825,16 @@ namespace VesselView
         /// <param name="color">Color.</param>
         private void renderIcon(Rect rect, Matrix4x4 screenMatrix, Color color, int type)
         {
+            GL.Begin(GL.QUADS);
+            GL.Color(Color.black);
+            GL.wireframe = false;
+            GL.Vertex(screenMatrix.MultiplyPoint3x4(new Vector3(rect.xMin, rect.yMin, 0.1f)));
+            GL.Vertex(screenMatrix.MultiplyPoint3x4(new Vector3(rect.xMin, rect.yMax, 0.1f)));
+            GL.Vertex(screenMatrix.MultiplyPoint3x4(new Vector3(rect.xMax, rect.yMax, 0.1f)));
+            GL.Vertex(screenMatrix.MultiplyPoint3x4(new Vector3(rect.xMax, rect.yMin, 0.1f)));
+            GL.End();
+            GL.wireframe = true;
+            
             //setup GL, then render the lines
             GL.Begin(GL.LINES);
             GL.Color(color);
