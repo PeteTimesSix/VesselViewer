@@ -5,21 +5,23 @@ using System.Text;
 using UnityEngine;
 using VesselView;
 
-namespace VesselViewRPM
+namespace VesselViewRPM.menus
 {
-    class VViewSimpleMenu : IVViewMenu
+    public class VViewSimpleMenu : IVViewMenu
     {
         private IVViewMenu rootMenu;
-        private VViewSimpleMenuItem[] menuItems;
+        private IVVSimpleMenuItem[] menuItems;
         private int activeItemPos = 0;
         public string name;
 
-        public VViewSimpleMenuItem ActiveItem
+        private CustomModeSettings customSettings;
+
+        public IVVSimpleMenuItem ActiveItem
         {
             get { return menuItems[activeItemPos]; }
         }
 
-        public VViewSimpleMenu(VViewSimpleMenuItem[] items, string name)
+        public VViewSimpleMenu(IVVSimpleMenuItem[] items, string name)
         {
             this.rootMenu = null;
             this.menuItems = items;
@@ -32,7 +34,7 @@ namespace VesselViewRPM
             builder.Append(name);
             builder.AppendLine("|-");
             int i = 0;
-            foreach (VViewSimpleMenuItem item in menuItems) {
+            foreach (IVVSimpleMenuItem item in menuItems) {
                 if (activeItemPos == i)
                 {
                     builder.AppendLine(item.ToString() + " <");
@@ -86,9 +88,9 @@ namespace VesselViewRPM
         }
 
 
-        public void update(Vessel ship)
+        public IVViewMenu update(Vessel ship)
         {
-            //nothing.
+            return null;
         }
 
 
@@ -101,6 +103,24 @@ namespace VesselViewRPM
         public void deactivate()
         {
             //nothing
+        }
+
+
+        public string getName()
+        {
+            return name;
+        }
+
+
+        public CustomModeSettings getCustomSettings()
+        {
+            return customSettings;
+        }
+
+
+        public void setCustomSettings(CustomModeSettings settings)
+        {
+            customSettings = settings;
         }
     }
 }

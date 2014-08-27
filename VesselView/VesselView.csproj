@@ -48,6 +48,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CustomModeSettings.cs" />
     <Compile Include="ViewerConstants.cs" />
     <Compile Include="ViewerSettings.cs" />
     <Compile Include="VesselViewer.cs" />

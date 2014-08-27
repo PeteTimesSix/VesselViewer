@@ -29,7 +29,8 @@ namespace VesselView
         //line material
         private readonly Material lineMaterial = ViewerConstants.DrawLineMaterial();
 
-        public ViewerSettings settings=new ViewerSettings();
+        public ViewerSettings basicSettings=new ViewerSettings();
+        public CustomModeSettings customMode;
 
         //stage counters
         private int stagesLastTime = 0;
@@ -37,17 +38,23 @@ namespace VesselView
 
         private int lastFrameDrawn = 0;
 
-
         private static Mesh bakedMesh = new Mesh();
 
+        private static List<VesselViewer> activeInstances = new List<VesselViewer>();
+
+        public VesselViewer()
+        {
+            activeInstances.Add(this);
+        }
+
         public void nilOffset(int width, int height) {
-            settings.scrOffX = width / 2;
-            settings.scrOffY = height / 2;
+            basicSettings.scrOffX = width / 2;
+            basicSettings.scrOffY = height / 2;
         }
 
         public void manuallyOffset(int offsetX, int offsetY) {
-            settings.scrOffX += offsetX;
-            settings.scrOffY += offsetY;
+            basicSettings.scrOffX += offsetX;
+            basicSettings.scrOffY += offsetY;
         }
 
         public void forceRedraw() {
@@ -60,39 +67,61 @@ namespace VesselView
             //also because it happens to look exactly like those NASA screens :3
             int frameDiff = Time.frameCount - lastFrameDrawn;
             bool redraw = false;
-            if (settings.latency == (int)ViewerConstants.LATENCY.OFF) redraw = true;
-            else if (settings.latency == (int)ViewerConstants.LATENCY.LOW) 
+            if (basicSettings.latency == (int)ViewerConstants.LATENCY.OFF) redraw = true;
+            else if (basicSettings.latency == (int)ViewerConstants.LATENCY.LOW) 
             {
                 if (frameDiff >= 3) redraw = true;
             }
-            else if (settings.latency == (int)ViewerConstants.LATENCY.MEDIUM)
+            else if (basicSettings.latency == (int)ViewerConstants.LATENCY.MEDIUM)
             {
                 if (frameDiff >= 10) redraw = true;
             }
-            else if (settings.latency == (int)ViewerConstants.LATENCY.HIGH)
+            else if (basicSettings.latency == (int)ViewerConstants.LATENCY.HIGH)
             {
                 if (frameDiff >= 30) redraw = true;
             }
-            else if (settings.latency == (int)ViewerConstants.LATENCY.TOOHIGH)
+            else if (basicSettings.latency == (int)ViewerConstants.LATENCY.TOOHIGH)
             {
                 if (frameDiff >= 75) redraw = true;
             }
             if (redraw) 
             {
+                //if (ViewerConstants.VVDEBUG) MonoBehaviour.print("Redrawing");
                 lastFrameDrawn = Time.frameCount;
                 //MonoBehaviour.print("VV restarting draw, screen internal:"+internalScreen);
                 restartDraw(screen);
-                if (settings.autoCenter)
-                {
-                    centerise(screen.width, screen.height);
+                if (customMode == null){
+                    if (basicSettings.autoCenter)
+                    {
+                        centerise(screen.width, screen.height);
+                    }
                 }
+                else {
+                    switch (customMode.CenteringOverride) 
+                    {
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.AS_BASIC:
+                            if (basicSettings.autoCenter)
+                            {
+                                centerise(screen.width, screen.height);
+                            }break;
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.STATIC:
+                            if (customMode.staticSettings.autoCenter)
+                            {
+                                centerise(screen.width, screen.height);
+                            }break;
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.FUNCTION:
+                            if (customMode.autoCenterDelegate(customMode))
+                            {
+                                centerise(screen.width, screen.height);
+                            }break;  
+                    }
+                }
+
             }
             //MonoBehaviour.print("VV draw call done");
         }
 
-        public VesselViewer() {
-        
-        }
+
 
         /// <summary>
         /// Start a new draw cycle.
@@ -104,10 +133,10 @@ namespace VesselView
             maxVecG = new Vector3(float.MinValue, float.MinValue, float.MinValue);
             lastUpdate = Time.time;
             partQueue.Clear();
-            settings.ship = FlightGlobals.ActiveVessel;
-            if (!settings.ship.isEVA)
+            //FlightGlobals.ActiveVessel = FlightGlobals.ActiveVessel;
+            if (!FlightGlobals.ActiveVessel.isEVA)
             {
-                partQueue.Enqueue(settings.ship.rootPart);
+                partQueue.Enqueue(FlightGlobals.ActiveVessel.rootPart);
             }
             try
             {
@@ -128,7 +157,7 @@ namespace VesselView
         void renderToTexture(RenderTexture renderTexture)
         {
             //render not when invisible, grasshopper.
-            if (settings.screenVisible)
+            if (basicSettings.screenVisible)
             {
 
                 //switch rendering to the texture
@@ -147,27 +176,24 @@ namespace VesselView
                 GL.Clear(true, true, Color.black);
                 
                 //set up the screen position and scaling matrix
-                Matrix4x4 matrix = Matrix4x4.TRS(new Vector3(settings.scrOffX, settings.scrOffY, 0), Quaternion.identity, new Vector3(settings.scaleFact, settings.scaleFact, 1));
+                Matrix4x4 matrix = Matrix4x4.TRS(new Vector3(basicSettings.scrOffX, basicSettings.scrOffY, 0), Quaternion.identity, new Vector3(basicSettings.scaleFact, basicSettings.scaleFact, 1));
                 //dunno what this does, but I trust in the stolen codes
                 lineMaterial.SetPass(0);
-
-                if (!settings.partSelectMode) 
+              
+                while (partQueue.Count > 0)
                 {
-                    while (partQueue.Count > 0)
+                    Part next = partQueue.Dequeue();
+                    if (next != null)
                     {
-                        Part next = partQueue.Dequeue();
-                        if (next != null)
-                        {
-                            renderPart(next, matrix, true);
-                        }
+                        renderPart(next, matrix, true);
                     }
                 }
                 GL.Clear(true, false, Color.black);
                 if (partQueue.Count == 0)
                 {
-                    if (!settings.ship.isEVA)
+                    if (!FlightGlobals.ActiveVessel.isEVA)
                     {
-                        partQueue.Enqueue(settings.ship.rootPart);
+                        partQueue.Enqueue(FlightGlobals.ActiveVessel.rootPart);
                     }
                 }
                 //lineMaterial.SetPass(1);
@@ -183,30 +209,150 @@ namespace VesselView
                     }
                 }
                 //now render engine exhaust indicators
-                if (settings.displayEngines)
+                if (customMode == null)
                 {
-                    renderEngineThrusts(matrix);
+                    if (basicSettings.displayEngines)
+                    {
+                        renderEngineThrusts(matrix);
+                    }
+                }
+                else
+                {
+                    switch (customMode.MinimodesOverride)
+                    {
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.AS_BASIC:
+                            if (basicSettings.displayEngines)
+                            {
+                                renderEngineThrusts(matrix);    
+                            } break;
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.STATIC:
+                            if (customMode.staticSettings.displayEngines)
+                            {
+                                renderEngineThrusts(matrix);    
+                            } break;
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.FUNCTION:
+                            if (customMode.displayEnginesDelegate(customMode))
+                            {
+                                renderEngineThrusts(matrix); 
+                            } break;
+                    }
                 }
                 //now render the bounding boxes (so theyre on top)
-                if (settings.colorModeBox != (int)ViewerConstants.COLORMODE.HIDE)
+                if (customMode == null)
                 {
-                    renderRects(matrix);
+                    if (basicSettings.colorModeBox != (int)ViewerConstants.COLORMODE.HIDE)
+                    {
+                        renderRects(matrix);
+                    }
                 }
+                else
+                {
+                    switch (customMode.ColorModeOverride)
+                    {
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.AS_BASIC:
+                            if (basicSettings.colorModeBox != (int)ViewerConstants.COLORMODE.HIDE)
+                            {
+                                renderRects(matrix);
+                            }break;
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.STATIC:
+                            if (customMode.staticSettings.colorModeBox != (int)ViewerConstants.COLORMODE.HIDE)
+                            {
+                                renderRects(matrix);
+                            }break;
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.FUNCTION:
+                            renderRects(matrix);
+                            break;
+                    }
+                }
+                
                 //now render center of mass
-                if (settings.displayCOM) 
+                if (customMode == null)
                 {
-                    renderCOM(matrix);
+                    if (basicSettings.displayCOM) 
+                    {
+                        renderCOM(matrix);
+                    }
                 }
-                if (settings.displayGround != (int)ViewerConstants.GROUND_DISPMODE.OFF)
+                else
                 {
-                    //first, render the ground
-                    renderGround(matrix);
+                    switch (customMode.MinimodesOverride)
+                    {
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.AS_BASIC:
+                            if (basicSettings.displayCOM) 
+                            {
+                                renderCOM(matrix);
+                            } break;
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.STATIC:
+                            if (customMode.staticSettings.displayCOM)
+                            {
+                                renderCOM(matrix);
+                            } break;
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.FUNCTION:
+                            if (customMode.displayCOMDelegate(customMode))
+                            {
+                                renderCOM(matrix);
+                            } break;
+                    }
                 }
-                if (settings.displayAxes)
+                //first, render the ground
+                if (customMode == null)
                 {
-                    //first, render the ground
-                    renderAxes(matrix);
+                    if (basicSettings.displayGround != (int)ViewerConstants.GROUND_DISPMODE.OFF)
+                    {
+                        renderGround(matrix);
+                    }
                 }
+                else
+                {
+                    switch (customMode.MinimodesOverride)
+                    {
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.AS_BASIC:
+                            if (basicSettings.displayGround != (int)ViewerConstants.GROUND_DISPMODE.OFF)
+                            {
+                                renderGround(matrix);
+                            } break;
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.STATIC:
+                            if (customMode.staticSettings.displayGround != (int)ViewerConstants.GROUND_DISPMODE.OFF)
+                            {
+                                renderGround(matrix);
+                            } break;
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.FUNCTION:
+                            if (customMode.displayGroundDelegate(customMode) != (int)ViewerConstants.GROUND_DISPMODE.OFF)
+                            {
+                                renderGround(matrix);
+                            } break;
+                    }
+                }
+                //first, render the ground
+                if (customMode == null)
+                {
+                    if (basicSettings.displayAxes)
+                    {
+                        renderAxes(matrix);
+                    }
+                }
+                else
+                {
+                    switch (customMode.MinimodesOverride)
+                    {
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.AS_BASIC:
+                            if (basicSettings.displayAxes)
+                            {
+                                renderAxes(matrix);
+                            } break;
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.STATIC:
+                            if (customMode.staticSettings.displayAxes)
+                            {
+                                renderAxes(matrix);
+                            } break;
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.FUNCTION:
+                            if (customMode.displayAxesDelegate(customMode))
+                            {
+                                renderAxes(matrix);
+                            } break;
+                    }
+                }
+                
                 /*if (settings.displayCOP)
                 {
                     renderCOP(matrix);
@@ -222,7 +368,7 @@ namespace VesselView
 
         private void renderEngineThrusts(Matrix4x4 screenMatrix)
         {
-            foreach (Part part in settings.ship.parts) 
+            foreach (Part part in FlightGlobals.ActiveVessel.parts) 
             {
                 string transformName = null;
                 List<Propellant> propellants = null;
@@ -309,14 +455,14 @@ namespace VesselView
                         }
                     }
 
-                    Matrix4x4 transMatrix = genTransMatrix(part.partTransform, settings.ship, true);
+                    Matrix4x4 transMatrix = genTransMatrix(part.partTransform, FlightGlobals.ActiveVessel, true);
                     //if online, render exhaust
                     if (scale > 0.01f) 
                     {
                         if (!transformName.Equals(""))
                         {
                             Transform thrustTransform = part.FindModelTransform(transformName);
-                            transMatrix = genTransMatrix(thrustTransform, settings.ship, true);
+                            transMatrix = genTransMatrix(thrustTransform, FlightGlobals.ActiveVessel, true);
                             //default to magenta
                             Color color = Color.magenta;
                             //liquid fuel engines
@@ -345,7 +491,7 @@ namespace VesselView
                         
                     }
                     //render icon
-                    float div = 6 / settings.scaleFact;
+                    float div = 6 / basicSettings.scaleFact;
                     Vector3 posStr = new Vector3();
                     posStr = transMatrix.MultiplyPoint3x4(posStr);
                     //out of fuel
@@ -383,7 +529,8 @@ namespace VesselView
             while (rectQueue.Count > 0)
             {
                 ViewerConstants.RectColor next = rectQueue.Dequeue();
-                renderRect(next.rect, screenMatrix, next.color);
+                //this way invisible squares dont cover up visible ones
+                if(!next.color.Equals(Color.black)) renderRect(next.rect, screenMatrix, next.color);
             }
 
         }
@@ -391,15 +538,15 @@ namespace VesselView
         private void renderGround(Matrix4x4 screenMatrix)
         {
             
-            //Vector3 groundN = settings.ship.mainBody.GetRelSurfaceNVector(settings.ship.latitude, settings.ship.longitude);
-            Vector3d position = settings.ship.vesselTransform.position;
+            //Vector3 groundN = FlightGlobals.ActiveVessel.mainBody.GetRelSurfaceNVector(FlightGlobals.ActiveVessel.latitude, FlightGlobals.ActiveVessel.longitude);
+            Vector3d position = FlightGlobals.ActiveVessel.vesselTransform.position;
             //unit vectors in the up (normal to planet surface), east, and north (parallel to planet surface) directions
-            //Vector3d eastUnit = settings.ship.mainBody.getRFrmVel(position).normalized; //uses the rotation of the body's frame to determine "east"
-            Vector3d upUnit = (position - settings.ship.mainBody.position).normalized;
+            //Vector3d eastUnit = FlightGlobals.ActiveVessel.mainBody.getRFrmVel(position).normalized; //uses the rotation of the body's frame to determine "east"
+            Vector3d upUnit = (position - FlightGlobals.ActiveVessel.mainBody.position).normalized;
             Vector3 groundDir = position + upUnit;
             //Quaternion lookAt = Quaternion.LookRotation(upUnit).Inverse();
             //MonoBehaviour.print("upUnit "+upUnit);
-            Matrix4x4 worldToLocal = settings.ship.vesselTransform.worldToLocalMatrix;
+            Matrix4x4 worldToLocal = FlightGlobals.ActiveVessel.vesselTransform.worldToLocalMatrix;
             Vector3 localSpaceNormal = worldToLocal.MultiplyPoint3x4(groundDir);
             Vector3 perp1;
             if (localSpaceNormal.y > 0.9 | localSpaceNormal.y < -0.9)
@@ -412,8 +559,8 @@ namespace VesselView
             //MonoBehaviour.print("localSpaceNormal " + localSpaceNormal);
             //MonoBehaviour.print("perp1 " + perp1);
             //MonoBehaviour.print("perp2 " + perp2);
-            //Vector3 worldSpaceNormal = settings.ship.vesselTransform.localToWorldMatrix.MultiplyPoint3x4(groundDir);
-            double altitude = settings.ship.altitude-settings.ship.terrainAltitude;
+            //Vector3 worldSpaceNormal = FlightGlobals.ActiveVessel.vesselTransform.localToWorldMatrix.MultiplyPoint3x4(groundDir);
+            double altitude = FlightGlobals.ActiveVessel.altitude - FlightGlobals.ActiveVessel.terrainAltitude;
             if (altitude > ViewerConstants.MAX_ALTITUDE) return;
             float biggestCrossSection = maxVecG.x - minVecG.x;
             if (maxVecG.y - minVecG.y > biggestCrossSection) biggestCrossSection = maxVecG.y - minVecG.y;
@@ -438,7 +585,7 @@ namespace VesselView
             Vector3 groundBelow4 = new Vector3(-biggestCrossSection, -(float)altitude, biggestCrossSection);*/
             //Vector3 direction = groundBelow + groundN;
             //MonoBehaviour.print("COM>"+COM);
-            Matrix4x4 transMatrix = genTransMatrix(settings.ship.rootPart.transform, settings.ship, true);
+            Matrix4x4 transMatrix = genTransMatrix(FlightGlobals.ActiveVessel.rootPart.transform, FlightGlobals.ActiveVessel, true);
 
             groundBelow = transMatrix.MultiplyPoint3x4(groundBelow);
             groundBelow1 = transMatrix.MultiplyPoint3x4(groundBelow1);
@@ -449,10 +596,35 @@ namespace VesselView
             /*Quaternion rot = Quaternion.FromToRotation(groundN, Vector3.up);
             Quaternion rotInv = Quaternion.FromToRotation(Vector3.up, groundN);*/
             float angle = Vector3.Angle(Vector3.up, localSpaceNormal);
-            if (settings.displayGround == (int)ViewerConstants.GROUND_DISPMODE.PLANE) 
-            {
-                angle = Vector3.Angle(Vector3.back, localSpaceNormal);
-            }
+            if (customMode == null)
+                {
+                    if (basicSettings.displayGround == (int)ViewerConstants.GROUND_DISPMODE.PLANE) 
+                    {
+                        angle = Vector3.Angle(Vector3.back, localSpaceNormal);
+                    }
+                }
+                else
+                {
+                    switch (customMode.MinimodesOverride)
+                    {
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.AS_BASIC:
+                            if (basicSettings.displayGround == (int)ViewerConstants.GROUND_DISPMODE.PLANE) 
+                            {
+                                angle = Vector3.Angle(Vector3.back, localSpaceNormal);
+                            } break;
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.STATIC:
+                            if (customMode.staticSettings.displayGround == (int)ViewerConstants.GROUND_DISPMODE.PLANE) 
+                            {
+                                angle = Vector3.Angle(Vector3.back, localSpaceNormal);
+                            } break;
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.FUNCTION:
+                            if (customMode.displayGroundDelegate(customMode) == (int)ViewerConstants.GROUND_DISPMODE.PLANE)
+                            {
+                                angle = Vector3.Angle(Vector3.back, localSpaceNormal);
+                            } break;
+                    }
+                }
+            
             if (angle > 40) angle = 40;
             //MonoBehaviour.print("angle> " + angle);
             Color color = genFractColor(1-(angle / 40f));
@@ -462,11 +634,11 @@ namespace VesselView
             //direction = transMatrix.MultiplyPoint3x4(direction);
 
 
-            //groundBelow = settings.ship.vesselTransform.rotation.Inverse() * groundBelow;
-            /*groundBelow1 = settings.ship.vesselTransform.rotation.Inverse() * groundBelow1;
-            groundBelow2 = settings.ship.vesselTransform.rotation.Inverse() * groundBelow2;
-            groundBelow3 = settings.ship.vesselTransform.rotation.Inverse() * groundBelow3;
-            groundBelow4 = settings.ship.vesselTransform.rotation.Inverse() * groundBelow4;*/
+            //groundBelow = FlightGlobals.ActiveVessel.vesselTransform.rotation.Inverse() * groundBelow;
+            /*groundBelow1 = FlightGlobals.ActiveVessel.vesselTransform.rotation.Inverse() * groundBelow1;
+            groundBelow2 = FlightGlobals.ActiveVessel.vesselTransform.rotation.Inverse() * groundBelow2;
+            groundBelow3 = FlightGlobals.ActiveVessel.vesselTransform.rotation.Inverse() * groundBelow3;
+            groundBelow4 = FlightGlobals.ActiveVessel.vesselTransform.rotation.Inverse() * groundBelow4;*/
 
             /*groundBelow = rot * groundBelow;
             groundBelow1 = rot * groundBelow1;
@@ -483,7 +655,7 @@ namespace VesselView
             MonoBehaviour.print("after>" + groundBelow4);*/
 
             //MonoBehaviour.print("COM modified>" + COM);
-            float div = 6 / settings.scaleFact;
+            float div = 6 / basicSettings.scaleFact;
             renderIcon(new Rect(-div + groundBelow.x, -div + groundBelow.y, 2 * div, 2 * div), screenMatrix, Color.green, (int)ViewerConstants.ICONS.TRIANGLE_DOWN);
             //renderIcon(new Rect(-div + direction.x, -div + direction.y, 2 * div, 2 * div), screenMatrix, Color.magenta, (int)ViewerConstants.ICONS.DIAMOND);
 
@@ -509,7 +681,7 @@ namespace VesselView
         private void renderAxes(Matrix4x4 screenMatrix)
         {
 
-            Matrix4x4 transMatrix = genTransMatrix(settings.ship.rootPart.transform, settings.ship, true);
+            Matrix4x4 transMatrix = genTransMatrix(FlightGlobals.ActiveVessel.rootPart.transform, FlightGlobals.ActiveVessel, true);
 
             Vector3 up = transMatrix.MultiplyPoint3x4(Vector3.up * 10000);
             Vector3 down = transMatrix.MultiplyPoint3x4(Vector3.down * 10000);
@@ -538,40 +710,40 @@ namespace VesselView
         private void renderCOM(Matrix4x4 screenMatrix)
         {
             
-            Vector3 COM = settings.ship.findLocalCenterOfMass();
+            Vector3 COM = FlightGlobals.ActiveVessel.findLocalCenterOfMass();
             //MonoBehaviour.print("COM>"+COM);
-            Matrix4x4 transMatrix = genTransMatrix(settings.ship.rootPart.transform, settings.ship, true);
+            Matrix4x4 transMatrix = genTransMatrix(FlightGlobals.ActiveVessel.rootPart.transform, FlightGlobals.ActiveVessel, true);
             //transMatrix = screenMatrix * transMatrix;
             //now render it
             COM = transMatrix.MultiplyPoint3x4(COM);
             //MonoBehaviour.print("COM modified>" + COM);
-            float div = 6 / settings.scaleFact;
+            float div = 6 / basicSettings.scaleFact;
             renderIcon(new Rect(-div + COM.x, -div + COM.y, 2 * div, 2 * div), screenMatrix, Color.magenta, (int)ViewerConstants.ICONS.SQUARE_DIAMOND);
         }
 
         private void renderCOP(Matrix4x4 screenMatrix)
         {
-            Vector3 COP = settings.ship.findLocalCenterOfPressure();
+            Vector3 COP = FlightGlobals.ActiveVessel.findLocalCenterOfPressure();
             //MonoBehaviour.print("COM>"+COM);
-            Matrix4x4 transMatrix = genTransMatrix(settings.ship.rootPart.transform, settings.ship, true);
+            Matrix4x4 transMatrix = genTransMatrix(FlightGlobals.ActiveVessel.rootPart.transform, FlightGlobals.ActiveVessel, true);
             //transMatrix = screenMatrix * transMatrix;
             //now render it
             COP = transMatrix.MultiplyPoint3x4(COP);
             //MonoBehaviour.print("COM modified>" + COM);
-            float div = 6 / settings.scaleFact;
+            float div = 6 / basicSettings.scaleFact;
             renderIcon(new Rect(-div + COP.x, -div + COP.y, 2 * div, 2 * div), screenMatrix, Color.cyan, (int)ViewerConstants.ICONS.SQUARE_DIAMOND);
         }
 
         private void renderMOI(Matrix4x4 screenMatrix)
         {
-            Vector3 MOI = settings.ship.findLocalMOI();
+            Vector3 MOI = FlightGlobals.ActiveVessel.findLocalMOI();
             //MonoBehaviour.print("COM>"+COM);
-            Matrix4x4 transMatrix = genTransMatrix(settings.ship.rootPart.transform, settings.ship, true);
+            Matrix4x4 transMatrix = genTransMatrix(FlightGlobals.ActiveVessel.rootPart.transform, FlightGlobals.ActiveVessel, true);
             //transMatrix = screenMatrix * transMatrix;
             //now render it
             MOI = transMatrix.MultiplyPoint3x4(MOI);
             //MonoBehaviour.print("COM modified>" + COM);
-            float div = 6 / settings.scaleFact;
+            float div = 6 / basicSettings.scaleFact;
             renderIcon(new Rect(-div + MOI.x, -div + MOI.y, 2 * div, 2 * div), screenMatrix, Color.yellow, (int)ViewerConstants.ICONS.SQUARE_DIAMOND);
         }
 
@@ -593,40 +765,164 @@ namespace VesselView
             }
             
             //get the appropriate colors
-            Color partColor;
-            Color boxColor;
+            Color partColor = new Color();
+            Color boxColor = new Color();
 
-            if (!settings.partSelectMode)
-            {
-                if (!fill)  partColor = getPartColor(part, settings.colorModeMesh);
-                else        partColor = getPartColor(part, settings.colorModeFill);
-                boxColor = getPartColor(part, settings.colorModeBox);
-            }
-            else {
-                partColor = getPartColorSelectMode(part, settings);
-                boxColor = getPartColorSelectMode(part, settings);
-            }
-            if (settings.colorModeBoxDull) {
-                boxColor.r = boxColor.r / 2;
-                boxColor.g = boxColor.g / 2;
-                boxColor.b = boxColor.b / 2;
-            }
+            if (customMode == null)
+                {
+                    if (!fill)  partColor = getPartColor(part, basicSettings.colorModeWire);
+                    else        partColor = getPartColor(part, basicSettings.colorModeFill);
+                }
+                else
+                {
+                    switch (customMode.ColorModeOverride)
+                    {
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.AS_BASIC:
+                            if (!fill)  partColor = getPartColor(part, basicSettings.colorModeWire);
+                            else        partColor = getPartColor(part, basicSettings.colorModeFill); 
+                            break;
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.STATIC:
+                            if (!fill)  partColor = getPartColor(part, customMode.staticSettings.colorModeWire);
+                            else        partColor = getPartColor(part, customMode.staticSettings.colorModeFill);  
+                            break;
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.FUNCTION:
+                            if (fill)   partColor = customMode.fillColorDelegate(customMode,part);
+                            else partColor = customMode.wireColorDelegate(customMode, part);
+                            break;
+                    }
+                }
+
+            if (customMode == null)
+                {
+                    boxColor = getPartColor(part, basicSettings.colorModeBox);
+                }
+                else
+                {
+                    switch (customMode.ColorModeOverride)
+                    {
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.AS_BASIC:
+                            boxColor = getPartColor(part, basicSettings.colorModeBox);
+                            break;
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.STATIC:
+                            boxColor = getPartColor(part, customMode.staticSettings.colorModeBox);
+                            break;
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.FUNCTION:
+                            boxColor = customMode.boxColorDelegate(customMode, part);
+                            break;
+                    }
+                }
+            
+            if (customMode == null)
+                {
+                    if (basicSettings.colorModeBoxDull) {
+                        boxColor.r = boxColor.r / 2;
+                        boxColor.g = boxColor.g / 2;
+                        boxColor.b = boxColor.b / 2;
+                    }
+                }
+                else
+                {
+                    switch (customMode.ColorModeOverride)
+                    {
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.AS_BASIC:
+                            if (basicSettings.colorModeBoxDull) {
+                                boxColor.r = boxColor.r / 2;
+                                boxColor.g = boxColor.g / 2;
+                                boxColor.b = boxColor.b / 2;
+                            }break;
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.STATIC:
+                            if (customMode.staticSettings.colorModeBoxDull) {
+                                boxColor.r = boxColor.r / 2;
+                                boxColor.g = boxColor.g / 2;
+                                boxColor.b = boxColor.b / 2;
+                            }break;
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.FUNCTION:
+                            if (customMode.boxColorDullDelegate(customMode)) {
+                                boxColor.r = boxColor.r / 2;
+                                boxColor.g = boxColor.g / 2;
+                                boxColor.b = boxColor.b / 2;
+                            }break;
+                    }
+                }
+            
             if (fill) 
             {
-                if (settings.colorModeFillDull)
+                if (customMode == null)
                 {
-                    partColor.r = partColor.r / 2;
-                    partColor.g = partColor.g / 2;
-                    partColor.b = partColor.b / 2;
+                    if (basicSettings.colorModeFillDull)
+                    {
+                        partColor.r = partColor.r / 2;
+                        partColor.g = partColor.g / 2;
+                        partColor.b = partColor.b / 2;
+                    }
                 }
+                else
+                {
+                    switch (customMode.ColorModeOverride)
+                    {
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.AS_BASIC:
+                            if (basicSettings.colorModeFillDull)
+                            {
+                                partColor.r = partColor.r / 2;
+                                partColor.g = partColor.g / 2;
+                                partColor.b = partColor.b / 2;
+                            }break;
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.STATIC:
+                            if (customMode.staticSettings.colorModeFillDull)
+                            {
+                                partColor.r = partColor.r / 2;
+                                partColor.g = partColor.g / 2;
+                                partColor.b = partColor.b / 2;
+                            }break;
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.FUNCTION:
+                            if (customMode.fillColorDullDelegate(customMode))
+                            {
+                                partColor.r = partColor.r / 2;
+                                partColor.g = partColor.g / 2;
+                                partColor.b = partColor.b / 2;
+                            }break;
+                    }
+                }
+                
             }
             else 
             {
-                if (settings.colorModeMeshDull)
+                
+                if (customMode == null)
                 {
-                    partColor.r = partColor.r / 2;
-                    partColor.g = partColor.g / 2;
-                    partColor.b = partColor.b / 2;
+                    if (basicSettings.colorModeWireDull)
+                    {
+                        partColor.r = partColor.r / 2;
+                        partColor.g = partColor.g / 2;
+                        partColor.b = partColor.b / 2;
+                    }
+                }
+                else
+                {
+                    switch (customMode.ColorModeOverride)
+                    {
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.AS_BASIC:
+                            if (basicSettings.colorModeWireDull)
+                            {
+                                partColor.r = partColor.r / 2;
+                                partColor.g = partColor.g / 2;
+                                partColor.b = partColor.b / 2;
+                            } break;
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.STATIC:
+                            if (customMode.staticSettings.colorModeWireDull)
+                            {
+                                partColor.r = partColor.r / 2;
+                                partColor.g = partColor.g / 2;
+                                partColor.b = partColor.b / 2;
+                            } break;
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.FUNCTION:
+                            if (customMode.wireColorDullDelegate(customMode))
+                            {
+                                partColor.r = partColor.r / 2;
+                                partColor.g = partColor.g / 2;
+                                partColor.b = partColor.b / 2;
+                            } break;
+                    }
                 }
             }
             
@@ -654,7 +950,7 @@ namespace VesselView
                     {
                         Mesh mesh = meshF.mesh;
                         //create the trans. matrix for this mesh (also update the bounds)
-                        Matrix4x4 transMatrix = genTransMatrix(meshF.transform, settings.ship,false);
+                        Matrix4x4 transMatrix = genTransMatrix(meshF.transform, FlightGlobals.ActiveVessel,false);
                         updateMinMax(mesh.bounds, transMatrix, ref minVec, ref maxVec);
                         transMatrix = scrnMatrix * transMatrix;
                         //now render it
@@ -674,7 +970,7 @@ namespace VesselView
                     //luckily, I can apparently ask them to do all the work for me
                     smesh.BakeMesh(bakedMesh);
                     //create the trans. matrix for this mesh (also update the bounds)
-                    Matrix4x4 transMatrix = genTransMatrix(part.transform, settings.ship,false);
+                    Matrix4x4 transMatrix = genTransMatrix(part.transform, FlightGlobals.ActiveVessel,false);
                     updateMinMax(bakedMesh.bounds, transMatrix, ref minVec, ref maxVec);
                     transMatrix = scrnMatrix * transMatrix;
                     //now render it
@@ -684,39 +980,12 @@ namespace VesselView
                 }
                 
             }
-            if (settings.partSelectMode & settings.selectionCenter) {
-                if (settings.selectedPart != null) {
-                    if (part == settings.selectedPart)
-                    {
-                        //finally, update the vessel "bounding box"
-                        if (minVecG.x > minVec.x) minVecG.x = minVec.x;
-                        if (minVecG.y > minVec.y) minVecG.y = minVec.y;
-                        if (minVecG.z > minVec.z) minVecG.z = minVec.z;
-                        if (maxVecG.x < maxVec.x) maxVecG.x = maxVec.x;
-                        if (maxVecG.y < maxVec.y) maxVecG.y = maxVec.y;
-                        if (maxVecG.z < maxVec.z) maxVecG.z = maxVec.z;
-                    }
-                    else if (settings.selectionSymmetry)
-                    {
-                        foreach (Part symPart in settings.selectedPart.symmetryCounterparts)
-                        {
-                            if (part == symPart)
-                            {
-                                //finally, update the vessel "bounding box"
-                                if (minVecG.x > minVec.x) minVecG.x = minVec.x;
-                                if (minVecG.y > minVec.y) minVecG.y = minVec.y;
-                                if (minVecG.z > minVec.z) minVecG.z = minVec.z;
-                                if (maxVecG.x < maxVec.x) maxVecG.x = maxVec.x;
-                                if (maxVecG.y < maxVec.y) maxVecG.y = maxVec.y;
-                                if (maxVecG.z < maxVec.z) maxVecG.z = maxVec.z;
-                                break;
-                            }
-                        }
-                    }
-                }
-                
-            }
-            else
+            bool addToTotals = false;
+            if (customMode == null) addToTotals = true;
+            else if (customMode.focusSubset.Count == 0) addToTotals = true;
+            else if (customMode.focusSubset.Contains(part)) addToTotals = true;
+
+            if(addToTotals)
             {
                 //finally, update the vessel "bounding box"
                 if (minVecG.x > minVec.x) minVecG.x = minVec.x;
@@ -794,7 +1063,7 @@ namespace VesselView
                 scale += (scale / 100) * (40-timeAdd);
             }
             float sideScale = scale / 4f;
-            Matrix4x4 transMatrix = genTransMatrix(thrustTransform, settings.ship, true);
+            Matrix4x4 transMatrix = genTransMatrix(thrustTransform, FlightGlobals.ActiveVessel, true);
             Vector3 posStr = new Vector3(0, 0, offset);
             posStr = transMatrix.MultiplyPoint3x4(posStr);
             Vector3 posStr1 = new Vector3(-sideScale, 0, offset+sideScale);
@@ -1033,8 +1302,47 @@ namespace VesselView
             transformTemp.transform.rotation = Quaternion.identity;
             //NavBall stockNavBall = GameObject.Find("NavBall").GetComponent<NavBall>();
             Vector3 extraRot = new Vector3(0, 0, 0);
-            float speed = ViewerConstants.SPIN_SPEED_VAL[settings.spinSpeed];
-            switch (settings.spinAxis) 
+            float speed = 0;
+            if (customMode == null)
+                {
+                    speed = ViewerConstants.SPIN_SPEED_VAL[basicSettings.spinSpeed];
+                }
+                else
+                {
+                    switch (customMode.OrientationOverride)
+                    {
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.AS_BASIC:
+                            speed = ViewerConstants.SPIN_SPEED_VAL[basicSettings.spinSpeed];
+                            break;
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.STATIC:
+                            speed = ViewerConstants.SPIN_SPEED_VAL[customMode.staticSettings.spinSpeed];
+                            break;
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.FUNCTION:
+                            speed = customMode.spinSpeedDelegate(customMode);
+                            break;
+                    }
+                }
+            int spinAxis = 0;
+            if (customMode == null)
+                {
+                    spinAxis = basicSettings.spinAxis;
+                }
+                else
+                {
+                    switch (customMode.OrientationOverride)
+                    {
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.AS_BASIC:
+                            spinAxis = basicSettings.spinAxis;
+                            break;
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.STATIC:
+                            spinAxis = customMode.staticSettings.spinAxis;
+                            break;
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.FUNCTION:
+                            spinAxis = customMode.spinAxisDelegate(customMode);
+                            break;
+                    }
+                }
+            switch (spinAxis) 
             {
                 case (int)ViewerConstants.AXIS.X:
                     extraRot.x += ((Time.time * speed) % 360);
@@ -1046,8 +1354,27 @@ namespace VesselView
                     extraRot.z += ((Time.time * speed) % 360);
                     break;
             }
-
-            switch (settings.drawPlane)
+            int drawPlane = 0;
+            if (customMode == null)
+                {
+                    drawPlane = basicSettings.drawPlane;
+                }
+                else
+                {
+                    switch (customMode.OrientationOverride)
+                    {
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.AS_BASIC:
+                            drawPlane = basicSettings.drawPlane;
+                            break;
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.STATIC:
+                            drawPlane = customMode.staticSettings.drawPlane;
+                            break;
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.FUNCTION:
+                            drawPlane = customMode.drawPlaneDelegate(customMode);
+                            break;
+                    }
+                }
+            switch (drawPlane)
             {
                 case (int)ViewerConstants.PLANE.XY:
                     transformTemp.transform.Rotate(extraRot);
@@ -1103,16 +1430,51 @@ namespace VesselView
         private void centerise(int screenWidth, int screenHeight)
         {
             //for padding
-            int screenWidthM = (int)(screenWidth * 0.9f);
-            int screenHeightM = (int)(screenHeight * 0.9f);
+            float margin = 1f;
+            bool centerH = false;
+            bool centerV = false;
+            int rescale = 0;
+            if (customMode == null)
+                {
+                    margin = ViewerConstants.MARGIN_MULTIPLIER[basicSettings.margin];
+                    centerH = basicSettings.centerOnRootH;
+                    centerV = basicSettings.centerOnRootV;
+                    rescale = basicSettings.centerRescale;
+                }
+                else
+                {
+                    switch (customMode.CenteringOverride)
+                    {
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.AS_BASIC:
+                            margin = ViewerConstants.MARGIN_MULTIPLIER[basicSettings.margin];
+                            centerH = basicSettings.centerOnRootH;
+                            centerV = basicSettings.centerOnRootV;
+                            rescale = basicSettings.centerRescale;
+                            break;
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.STATIC:
+                            margin = ViewerConstants.MARGIN_MULTIPLIER[customMode.staticSettings.margin];
+                            centerH = customMode.staticSettings.centerOnRootH;
+                            centerV = customMode.staticSettings.centerOnRootV;
+                            rescale = customMode.staticSettings.centerRescale;
+                            break;
+                        case (int)CustomModeSettings.OVERRIDE_TYPES.FUNCTION:
+                            margin = customMode.marginDelegate(customMode);
+                            centerH = customMode.centerOnRootHDelegate(customMode);
+                            centerV = customMode.centerOnRootVDelegate(customMode);
+                            rescale = customMode.centerRescaleDelegate(customMode);
+                            break;
+                    }
+                }
+            float screenWidthM = screenWidth * margin;
+            float screenHeightM = screenHeight * margin;
             //if we want the root part to stay in the center on an axis, we need the 
             //bounding box to have the same size from both sides of it in that axis
-            if (settings.centerOnRootH)
+            if (centerH)
             {
                 if (Math.Abs(maxVecG.x) < Math.Abs(minVecG.x)) maxVecG.x = -minVecG.x;
                 else minVecG.x = -maxVecG.x;
             }
-            if (settings.centerOnRootV)
+            if (centerV)
             {
                 if (Math.Abs(maxVecG.y) < Math.Abs(minVecG.y)) maxVecG.y = -minVecG.y;
                 else minVecG.y = -maxVecG.y;
@@ -1120,54 +1482,33 @@ namespace VesselView
             float xDiff = (maxVecG.x - minVecG.x);
             float yDiff = (maxVecG.y - minVecG.y);
             //to rescale, we need to scale up the vessel render to fit the screen bounds
-            if (settings.centerRescale != (int)ViewerConstants.RESCALEMODE.OFF)
+            if (rescale != (int)ViewerConstants.RESCALEMODE.OFF)
             {
                 float maxDiff = 0;
-                if (settings.centerRescale == (int)ViewerConstants.RESCALEMODE.INCR) maxDiff = 0.5f;
-                if (settings.centerRescale == (int)ViewerConstants.RESCALEMODE.CLOSE) maxDiff = 0.85f;
-                if (settings.centerRescale == (int)ViewerConstants.RESCALEMODE.BEST) maxDiff = 1f;
+                if (rescale == (int)ViewerConstants.RESCALEMODE.INCR) maxDiff = 0.5f;
+                if (rescale == (int)ViewerConstants.RESCALEMODE.CLOSE) maxDiff = 0.85f;
+                if (rescale == (int)ViewerConstants.RESCALEMODE.BEST) maxDiff = 1f;
 
                 float idealScaleX = screenWidthM / xDiff;
                 float idealScaleY = screenHeightM / yDiff;
                 //round to nearest integer
                 float newScale = (int)((idealScaleX < idealScaleY) ? idealScaleX : idealScaleY);
-                float diffFact = settings.scaleFact / newScale;
+                float diffFact = basicSettings.scaleFact / newScale;
                 if (diffFact < maxDiff | diffFact > 1) 
                 {
-                    settings.scaleFact = newScale;
+                    basicSettings.scaleFact = newScale;
                     //and clamp it a bit
-                    if (settings.scaleFact < 1) settings.scaleFact = 1;
-                    if (settings.scaleFact > 1000) settings.scaleFact = 1000;
+                    if (basicSettings.scaleFact < 1) basicSettings.scaleFact = 1;
+                    if (basicSettings.scaleFact > 1000) basicSettings.scaleFact = 1000;
                 }
             }
             //to centerise, we need to move the center point of the vessel render
             //into the center of the screen
-            settings.scrOffX = screenWidth / 2 - (int)((minVecG.x + xDiff / 2) * settings.scaleFact);
-            settings.scrOffY = screenHeight / 2 - (int)((minVecG.y + yDiff / 2) * settings.scaleFact);
+            basicSettings.scrOffX = screenWidth / 2 - (int)((minVecG.x + xDiff / 2) * basicSettings.scaleFact);
+            basicSettings.scrOffY = screenHeight / 2 - (int)((minVecG.y + yDiff / 2) * basicSettings.scaleFact);
         }
 
-        private bool partIsOnWayToRoot(Part part, Part leaf, Part root) {
-            if (part == null | leaf == null | root == null) return false;
-            if (leaf == root) return false;
-            if (leaf == part) return true;
-            return partIsOnWayToRoot(part, leaf.parent, root);
-        }
-
-        private Color getPartColorSelectMode(Part part, ViewerSettings settings) {
-            Color darkGreen = Color.green;
-            darkGreen.g = 0.6f;
-            darkGreen.r = 0.3f;
-            darkGreen.b = 0.3f;
-            Part selectedPart = settings.selectedPart;
-            if (selectedPart == null) return Color.red;
-            if (part == selectedPart) return Color.green;
-            if (settings.selectionSymmetry) {
-                if (selectedPart.symmetryCounterparts.Contains(part)) return darkGreen;
-            }
-            if (partIsOnWayToRoot(part, selectedPart, settings.ship.rootPart)) return Color.yellow;
-            if (part == settings.ship.rootPart) return Color.magenta;
-            return Color.white;
-        }
+        
 
         /// <summary>
         /// Returns the color appropriate for a given part,
@@ -1209,11 +1550,11 @@ namespace VesselView
                     int neededColors = Math.Max(stagesLastTime, Math.Max(Staging.StageCount, stagesThisTimeMax)) + 1;
                     if (stageGradient == null)
                     {
-                        genColorGradient(neededColors);
+                        stageGradient = genColorGradient(neededColors);
                     }
                     else if (stageGradient.Length != neededColors)
                     {
-                        genColorGradient(neededColors);
+                        stageGradient = genColorGradient(neededColors);
                     }
                     //now return the color 
                     //print("part " + part.name + " inv. stage " + part.inverseStage);
@@ -1428,9 +1769,9 @@ namespace VesselView
         /// Colors generated have the same saturation and lightness, and an even hue spread.
         /// </summary>
         /// <param name="numberOfColors"></param>
-        private void genColorGradient(int numberOfColors)
+        public static Color[] genColorGradient(int numberOfColors)
         {
-            stageGradient = new Color[numberOfColors];
+            Color [] gradient = new Color[numberOfColors];
             float perStep = 4f / ((float)(numberOfColors - 1));
             //colors are generated in four intervals
             //0-1 (red is maxed, green increases)
@@ -1467,11 +1808,14 @@ namespace VesselView
                     color.g = 4f - pos;
                     color.b = 1f;
                 }
-                stageGradient[i] = color;
+                gradient[i] = color;
             }
+            return gradient;
         }
 
-
-
+        public void setCustomMode(CustomModeSettings customModeSettings)
+        {
+            customMode = customModeSettings;
+        }
     }
 }

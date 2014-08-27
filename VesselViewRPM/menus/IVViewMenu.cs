@@ -2,10 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using VesselView;
 
-namespace VesselViewRPM
+namespace VesselViewRPM.menus
 {
-    interface IVViewMenu
+    public interface IVViewMenu
     {
         void printMenu(ref StringBuilder builder, int width, int height);
 
@@ -20,7 +21,12 @@ namespace VesselViewRPM
         void setRoot(IVViewMenu root);
         IVViewMenu getRoot();
 
-        void update(Vessel ship);
+        IVViewMenu update(Vessel ship);
 
+        string getName();
+
+        //returns null if not a custom mode
+        CustomModeSettings getCustomSettings();
+        void setCustomSettings(CustomModeSettings settings);
     }
 }

@@ -2,15 +2,22 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using VesselViewRPM.menus;
 using VesselView;
 
-namespace VesselViewRPM
+namespace VVPartSelector
 {
-    class VViewMenuPartSelector : IVViewMenu
+    public class VViewMenuPartSelector : IVViewMenu
     {
         private CustomPartTree tree;
         private IVViewMenu rootMenu;
-        private ViewerSettings settings;
+        //private ViewerSettings settings;
+        private CustomModeSettings customSettings;
+        private string name = "Part selector";
+
+        internal bool zoomOnSelection = false;
+        internal bool symmetryMode = false;
+
 
         public enum SELECTIONMODES {
             NONE, EXPAND_PARTS, PARTS, EXPAND_ACTIONS, ACTIONS
@@ -19,9 +26,26 @@ namespace VesselViewRPM
         //private int selectedLine = 0;
         //private int selectionMode = (int)SELECTIONMODES.EXPAND_PARTS;
         
-        public VViewMenuPartSelector(ViewerSettings settings) {
-            this.settings = settings;
-            tree = new CustomPartTree(settings.ship);
+        public VViewMenuPartSelector() {
+            tree = new CustomPartTree(FlightGlobals.ActiveVessel);
+        }
+
+        public Part getSubselection() 
+        {
+            if (tree == null) return null;
+            if (tree.selectedItem == null) return null;
+            if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.PARTS)
+            {
+                return tree.selectedItem.children[tree.selectedItem.selectedLine].associatedPart;
+            }
+            return null;
+        }
+
+        public Part getSelection()
+        {
+            if (tree == null) return null;
+            if (tree.selectedItem == null) return null;
+            return tree.selectedItem.associatedPart;
         }
 
         public void printMenu(ref StringBuilder builder, int width, int height)
@@ -226,10 +250,21 @@ namespace VesselViewRPM
                 }
             }
             }
-            if (tree.selectedItem != null)
+            customSettings.focusSubset.Clear();
+            if (zoomOnSelection)
             {
-                settings.selectedPart = tree.selectedItem.associatedPart;
-            }
+                if (tree.selectedItem != null)
+                {
+                    if (symmetryMode)
+                    {
+                        foreach (Part symPart in tree.selectedItem.associatedPart.symmetryCounterparts)
+                        {
+                            customSettings.focusSubset.Add(symPart);
+                        }
+                    }
+                    customSettings.focusSubset.Add(tree.selectedItem.associatedPart);
+                }
+            }      
         }
 
         public void down()
@@ -304,10 +339,21 @@ namespace VesselViewRPM
                     }
                 }
             }
-            if (tree.selectedItem != null)
+            customSettings.focusSubset.Clear();
+            if (zoomOnSelection) 
             {
-                settings.selectedPart = tree.selectedItem.associatedPart;
-            }
+                if (tree.selectedItem != null)
+                {
+                    if (symmetryMode)
+                    {
+                        foreach (Part symPart in tree.selectedItem.associatedPart.symmetryCounterparts)
+                        {
+                            customSettings.focusSubset.Add(symPart);
+                        }
+                    }
+                    customSettings.focusSubset.Add(tree.selectedItem.associatedPart);
+                }
+            }       
         }
 
         public IVViewMenu click()
@@ -332,8 +378,8 @@ namespace VesselViewRPM
                     case (int)SELECTIONMODES.ACTIONS:
 
                         //REALLY a lot easier than expected
-                        
-                        if (settings.selectionSymmetry) {
+
+                        if (symmetryMode){
                             string name = tree.selectedItem.getActivableEvents()[tree.selectedItem.selectedLine].guiName;
                             foreach (Part part in tree.selectedItem.associatedPart.symmetryCounterparts) {
                                 if (part == null) continue;
@@ -359,10 +405,21 @@ namespace VesselViewRPM
                         break;
                 }
             }
-            if (tree.selectedItem != null)
+            customSettings.focusSubset.Clear();
+            if (zoomOnSelection)
             {
-                settings.selectedPart = tree.selectedItem.associatedPart;
-            }
+                if (tree.selectedItem != null)
+                {
+                    if (symmetryMode)
+                    {
+                        foreach (Part symPart in tree.selectedItem.associatedPart.symmetryCounterparts)
+                        {
+                            customSettings.focusSubset.Add(symPart);
+                        }
+                    }
+                    customSettings.focusSubset.Add(tree.selectedItem.associatedPart);
+                }
+            }      
             return null;
         }
 
@@ -376,10 +433,21 @@ namespace VesselViewRPM
                 else
                 {
                     tree.selectedItem = tree.selectedItem.root;
-                    if (tree.selectedItem != null)
+                    customSettings.focusSubset.Clear();
+                    if (zoomOnSelection)
                     {
-                        settings.selectedPart = tree.selectedItem.associatedPart;
-                    }
+                        if (tree.selectedItem != null)
+                        {
+                            if (symmetryMode)
+                            {
+                                foreach (Part symPart in tree.selectedItem.associatedPart.symmetryCounterparts)
+                                {
+                                    customSettings.focusSubset.Add(symPart);
+                                }
+                            }
+                            customSettings.focusSubset.Add(tree.selectedItem.associatedPart);
+                        }
+                    }      
                     return null;
                 }
             }
@@ -397,27 +465,55 @@ namespace VesselViewRPM
             return rootMenu;
         }
 
-        public void update(Vessel ship)
+        public IVViewMenu update(Vessel ship)
         {
             sanityCheck();
             tree.updateTree(ship);
+            return null;
         }
 
 
 
         public void activate()
         {
-            settings.partSelectMode = true;
-            
-            if (tree.selectedItem != null)
+            customSettings.focusSubset.Clear();
+            if (zoomOnSelection)
             {
-                settings.selectedPart = tree.selectedItem.associatedPart;
-            }
+                if (tree.selectedItem != null)
+                {
+                    if (symmetryMode)
+                    {
+                        foreach (Part symPart in tree.selectedItem.associatedPart.symmetryCounterparts)
+                        {
+                            customSettings.focusSubset.Add(symPart);
+                        }
+                    }
+                    customSettings.focusSubset.Add(tree.selectedItem.associatedPart);
+                }
+            }      
         }
 
         public void deactivate()
         {
-            settings.partSelectMode = false;
+            customSettings.focusSubset.Clear();
+        }
+
+
+        public string getName()
+        {
+            return name;
+        }
+
+
+        public CustomModeSettings getCustomSettings()
+        {
+            return customSettings;
+        }
+
+
+        public void setCustomSettings(CustomModeSettings settings)
+        {
+            customSettings = settings;
         }
     }
 }

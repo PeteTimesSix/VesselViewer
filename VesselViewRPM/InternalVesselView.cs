@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 using VesselView;
-using VesselViewRPM;
+using VesselViewRPM.menus;
 
 namespace JSI.Handlers
 {
@@ -55,12 +55,12 @@ namespace JSI.Handlers
         public int scrOffX = 0;
         [KSPField]
         public int scrOffY = 0;
-        [KSPField]
+        /*[KSPField]
         public bool partSelectMode = false;
         [KSPField]
         public bool selectionSymmetry = true;
         [KSPField]
-        public bool centerSelection = false;
+        public bool centerSelection = false;*/
         [KSPField]
         public int spinAxis = (int)ViewerConstants.AXIS.Y;
         [KSPField]
@@ -90,9 +90,10 @@ namespace JSI.Handlers
             StringBuilder builder = new StringBuilder();
             builder.AppendLine(pageTitle);
 
-            if (activeMenu != null) { 
-                activeMenu.update(settings.ship);
-                activeMenu.printMenu(ref builder, width, height);
+            if (activeMenu != null) {
+                IVViewMenu outMenu = activeMenu.update(FlightGlobals.ActiveVessel);
+                if (outMenu == null) activeMenu.printMenu(ref builder, width, height);
+                else activeMenu = outMenu;
             }
             //MonoBehaviour.print("text draw call done");
             textChanged = true;
@@ -102,7 +103,7 @@ namespace JSI.Handlers
 
         public bool RenderViewer(RenderTexture screen, float cameraAspect)
         {
-            
+            //if (ViewerConstants.VVDEBUG) MonoBehaviour.print("RenderViewer call");
             if (settings.screenVisible) 
             {
                 //MonoBehaviour.print("VV renderViewer method call");
@@ -111,9 +112,11 @@ namespace JSI.Handlers
                 {
                     forceRedraw = false;
                     textChanged = false;
+                    //if (ViewerConstants.VVDEBUG) MonoBehaviour.print("Forcing redraw");
                     viewer.forceRedraw();
                 }
                 //MonoBehaviour.print("screen draw call");
+                //if (ViewerConstants.VVDEBUG) MonoBehaviour.print("Viewer draw call");
                 viewer.drawCall(screen,true);
                 //MonoBehaviour.print("screen draw call done");
                 return true;
@@ -174,7 +177,7 @@ namespace JSI.Handlers
         public void Start()
         {
             viewer = new VesselViewer();
-            settings = viewer.settings;
+            settings = viewer.basicSettings;
             setupConfig();
             setupMenus();
             ready = true;
@@ -185,9 +188,9 @@ namespace JSI.Handlers
             //the RPM version and the standalone separate
             //but as long as I do, I have to keep the configuration plugin-side
             settings.colorModeFill = colorModeFill; 
-            settings.colorModeMesh = colorModeMesh;
+            settings.colorModeWire = colorModeMesh;
             settings.colorModeBox = colorModeBox;
-            settings.colorModeMeshDull = colorModeMeshDull;
+            settings.colorModeWireDull = colorModeMeshDull;
             settings.colorModeFillDull = colorModeFillDull;
             settings.colorModeBoxDull = colorModeBoxDull;
             settings.centerOnRootH = centerOnRootH;
@@ -198,9 +201,9 @@ namespace JSI.Handlers
             settings.scaleFact = scaleFactor;
             settings.scrOffX = scrOffX;
             settings.scrOffY = scrOffY;
-            settings.partSelectMode = partSelectMode;
-            settings.selectionSymmetry = selectionSymmetry;
-            settings.selectionCenter = centerSelection;
+            //settings.partSelectMode = partSelectMode;
+            //settings.selectionSymmetry = selectionSymmetry;
+            //settings.selectionCenter = centerSelection;
             settings.spinAxis = spinAxis;
             settings.spinSpeed = spinSpeed;
             settings.displayEngines = displayEngines;
@@ -211,14 +214,8 @@ namespace JSI.Handlers
 
         private void setupMenus() {
             //well I was gonna have to hardcode this SOMEWHERE.
-            List<VViewSimpleMenuItem> itemList = new List<VViewSimpleMenuItem>();
-            /*
+            List<IVVSimpleMenuItem> itemList = new List<IVVSimpleMenuItem>();
 
-            
-            VViewSimpleMenuItem[] PCMItems = {
-
-                                      };
-            */
             itemList.Clear();
             itemList.Add(new VViewSimpleMenuItem("Active: ", settings, "", "drawPlane"));
             for (int i = 0; i < ViewerConstants.PLANES.Length; i++) 
@@ -251,8 +248,8 @@ namespace JSI.Handlers
             }
             itemList.Add(new VViewSimpleMenuItem("Rotation speed:", settings, "spinSpeed", "spinSpeed"));
             VViewSimpleMenu rotationMENU = new VViewSimpleMenu(itemList.ToArray(), "Display autorotation");
-            
-            VViewSimpleMenuItem[] DCONItems = {
+
+            IVVSimpleMenuItem[] DCONItems = {
                 new VViewSimpleMenuItem("Vessel orientation",orientationMENU),
                 new VViewSimpleMenuItem("Vessel position",positionMENU),
                 new VViewSimpleMenuItem("Autoscaling:",settings,"centerRescale","centerRescale"),
@@ -291,7 +288,7 @@ namespace JSI.Handlers
             }
             VViewSimpleMenu passiveDisplayBoundsMENU = new VViewSimpleMenu(itemList.ToArray(), "Passive display (mesh)");
 
-            VViewSimpleMenuItem[] PASItems = {
+            IVVSimpleMenuItem[] PASItems = {
                 new VViewSimpleMenuItem("Passive display (mesh)",passiveDisplayFillMENU),
                 new VViewSimpleMenuItem("Passive display (wire)",passiveDisplayWireMENU),
                 new VViewSimpleMenuItem("Passive display (bounds)",passiveDisplayBoundsMENU),
@@ -307,38 +304,32 @@ namespace JSI.Handlers
             passiveDisplayBoundsMENU.setRoot((IVViewMenu)passiveDisplaysMENU);
 
             /***************************************************************************************************/
-            VViewMenuPartSelector partSelectMenu = new VViewMenuPartSelector(settings);
-            VViewSimpleMenuItem[] INTItems = {
-                new VViewSimpleMenuItem("Part selector (tree-traversal)",partSelectMenu),
-                new VViewSimpleMenuItem("Zoom on selection:",settings,"selectionCenter","selectionCenter"),
-                new VViewSimpleMenuItem("Affect symmetry:",settings,"selectionSymmetry","selectionSymmetry"),
-                                      };
-            VViewSimpleMenu interactiveDisplaysMENU = new VViewSimpleMenu(INTItems, "Interactive modes");
 
-            partSelectMenu.setRoot((IVViewMenu)interactiveDisplaysMENU);
+            VViewCustomMenusMenu customDisplaysMENU = new VViewCustomMenusMenu("Custom display modes", viewer);
+
             /***************************************************************************************************/
 
-            VViewSimpleMenuItem[] OTHItems = {
+            IVVSimpleMenuItem[] OTHItems = {
                 new VViewSimpleMenuItem("Latency mode:",settings,"latency","latency"),
                                       };
             VViewSimpleMenu configurationMENU = new VViewSimpleMenu(OTHItems, "Other configuration");
 
             /***************************************************************************************************/
 
-            VViewSimpleMenuItem[] MAMItems = {
+            IVVSimpleMenuItem[] MAMItems = {
                 new VViewSimpleMenuItem("Display configuration",displayConfigMENU),
                 new VViewSimpleMenuItem("Passive display modes",passiveDisplaysMENU),
-                new VViewSimpleMenuItem("Interactive modes",interactiveDisplaysMENU),
+                new VViewSimpleMenuItem("Custom display modes",customDisplaysMENU),
                 new VViewSimpleMenuItem("Other configuration",configurationMENU),
                                       };
             VViewSimpleMenu mainMenu = new VViewSimpleMenu(MAMItems, "Main menu");
 
             displayConfigMENU.setRoot((IVViewMenu)mainMenu);
             passiveDisplaysMENU.setRoot((IVViewMenu)mainMenu);
-            interactiveDisplaysMENU.setRoot((IVViewMenu)mainMenu);
+            customDisplaysMENU.setRoot((IVViewMenu)mainMenu);
             configurationMENU.setRoot((IVViewMenu)mainMenu);
 
-            VViewSimpleMenuItem[] HIDItems = {
+            IVVSimpleMenuItem[] HIDItems = {
                 new VViewSimpleMenuItem("Show",mainMenu)
                                       };
             VViewSimpleMenu hideMenu = new VViewSimpleMenu(HIDItems, "Hidden");

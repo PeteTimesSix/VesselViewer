@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 using Toolbar;
 using VesselView;
@@ -28,7 +25,13 @@ namespace VesselView
         private VesselViewer viewer;
         private ViewerSettings settings;
 
+        private int customMode = -1;
+        private static List<CustomModeSettings> customModes = new List<CustomModeSettings>();
 
+        public static void registerCustomMode(CustomModeSettings settings) 
+        {
+            customModes.Add(settings);
+        }
 
         /// <summary>
         /// Yoinked from a tutorial.
@@ -94,7 +97,7 @@ namespace VesselView
                 if (GUILayout.Button("Autoscaling:" + ViewerConstants.RESCALEMODES[settings.centerRescale], mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
                 {
                     settings.centerRescale++;
-                    if (settings.centerRescale == settings.centerRescaleMAX) settings.centerRescale = 0;
+                    if (settings.centerRescale == ViewerConstants.centerRescaleMAX) settings.centerRescale = 0;
                 }
 
                 /*if (GUILayout.Button("Scale:" + settings.scaleFact, mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
@@ -140,12 +143,21 @@ namespace VesselView
                 if (GUILayout.Button("Autorotation axis:" + ViewerConstants.AXES[settings.spinAxis], mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
                 {
                     settings.spinAxis++;
-                    if (settings.spinAxis == settings.spinAxisMAX) settings.spinAxis = 0;
+                    if (settings.spinAxis == ViewerConstants.spinAxisMAX) settings.spinAxis = 0;
                 }
                 if (GUILayout.Button("Autorotation speed:" + ViewerConstants.SPIN_SPEEDS[settings.spinSpeed], mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
                 {
                     settings.spinSpeed++;
-                    if (settings.spinSpeed == settings.spinSpeedMAX) settings.spinSpeed = 0;
+                    if (settings.spinSpeed == ViewerConstants.spinSpeedMAX) settings.spinSpeed = 0;
+                }
+                String customModeName = "Inactive";
+                if (customModes.Count > 0 & customMode >= 0) customModeName = (customModes.ToArray())[customMode].name;
+                if (GUILayout.Button("Custom mode:" + customModeName, mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
+                {
+                    customMode++;
+                    if (customMode >= customModes.Count | customModes.Count == 0) customMode = -1;
+                    if (customMode != -1) viewer.customMode = (customModes.ToArray())[customMode];
+                    else viewer.customMode = null;
                 }
                 GUILayout.EndHorizontal();
                 GUILayout.BeginHorizontal();
@@ -161,14 +173,14 @@ namespace VesselView
                 {
                     settings.colorModeFillDull = !settings.colorModeFillDull;
                 }
-                if (GUILayout.Button("Wire:" + ViewerConstants.COLORMODES[settings.colorModeMesh], mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
+                if (GUILayout.Button("Wire:" + ViewerConstants.COLORMODES[settings.colorModeWire], mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
                 {
-                    settings.colorModeMesh++;
-                    if (settings.colorModeMesh == ViewerConstants.COLORMODES.Length) settings.colorModeMesh = 0;
+                    settings.colorModeWire++;
+                    if (settings.colorModeWire == ViewerConstants.COLORMODES.Length) settings.colorModeWire = 0;
                 }
-                if (GUILayout.Button("Dull:" + settings.colorModeMeshDull, mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
+                if (GUILayout.Button("Dull:" + settings.colorModeWireDull, mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
                 {
-                    settings.colorModeMeshDull = !settings.colorModeMeshDull;
+                    settings.colorModeWireDull = !settings.colorModeWireDull;
                 }
                 if (GUILayout.Button("Bounds:" + ViewerConstants.COLORMODES[settings.colorModeBox], mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
                 {
@@ -196,7 +208,7 @@ namespace VesselView
                 if (GUILayout.Button("Landing assist:" + ViewerConstants.GROUND_DISPMODES[settings.displayGround], mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
                 {
                     settings.displayGround++;
-                    if (settings.displayGround == settings.displayGroundMAX) settings.displayGround = 0;
+                    if (settings.displayGround == ViewerConstants.displayGroundMAX) settings.displayGround = 0;
                 }
                 GUILayout.EndHorizontal();
                 GUILayout.BeginHorizontal();
@@ -215,10 +227,15 @@ namespace VesselView
                     if (scrnSizeYpos == ViewerConstants.SCREEN_SIZES.Length) scrnSizeYpos = 0;
                     setupTexture();
                 }
+                if (GUILayout.Button("Margins:" + ViewerConstants.MARGINS[settings.margin], mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
+                {
+                    settings.margin++;
+                    if (settings.margin == ViewerConstants.marginMAX) settings.margin = 0;
+                }
                 if (GUILayout.Button("Latency Mode:" + ViewerConstants.LATENCIES[settings.latency], mySty, GUILayout.ExpandWidth(true)))//GUILayout.Button is "true" when clicked
                 {
                     settings.latency++;
-                    if (settings.latency == settings.latencyMAX) settings.latency = 0;
+                    if (settings.latency == ViewerConstants.latencyMAX) settings.latency = 0;
                 }
                 GUILayout.EndHorizontal();
 
@@ -291,7 +308,7 @@ namespace VesselView
         {
             setupTexture();
             viewer = new VesselViewer();
-            settings = viewer.settings;
+            settings = viewer.basicSettings;
         }
 
         /// <summary>

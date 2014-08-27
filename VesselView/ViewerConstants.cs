@@ -5,7 +5,7 @@ namespace VesselView
 {
     public class ViewerConstants
     {
-        public static string VERSION = "0.5.1"; 
+        public static string VERSION = "0.6"; 
         
         //predefined values for the settings
         public static readonly float[] SCALE_FACTS = { 5, 10, 15, 20, 30, 40, 75, 100, 150 };
@@ -17,6 +17,13 @@ namespace VesselView
         {
             OFF, INCR, CLOSE, BEST
         }
+
+        public static readonly string[] MARGINS = { "1x", "1.1x", "1.5x", "2x", "5x", "10x" };
+        public enum MARGIN
+        {
+            REAL, SMALL, MEDIUM, LARGE, GIANT, OBSCENE
+        }
+        public static readonly float[] MARGIN_MULTIPLIER = { 1f / 1f, 1f / 1.1f, 1f / 1.5f, 1f / 2f, 1f / 5f, 1f / 10f };
 
         public static readonly string[] PLANES = { "XY", "XZ", "YZ","Isometric", "Relative", "Real" };
         public enum PLANE
@@ -60,7 +67,18 @@ namespace VesselView
             ENGINE_READY,
             ENGINE_INACTIVE
         }
-        
+
+        public static readonly int latencyMAX = ViewerConstants.LATENCIES.Length;
+        public static readonly int displayGroundMAX = ViewerConstants.GROUND_DISPMODES.Length;
+        public static readonly int centerRescaleMAX = ViewerConstants.RESCALEMODES.Length;
+        public static readonly int colorModeMeshMAX = ViewerConstants.COLORMODES.Length;
+        public static readonly int colorModeBoxMAX = ViewerConstants.COLORMODES.Length;
+        public static readonly int drawPlaneMAX = ViewerConstants.PLANES.Length;
+        public static readonly int scalePosMAX = ViewerConstants.SCALE_FACTS.Length;
+        public static readonly int spinAxisMAX = ViewerConstants.AXES.Length;
+        public static readonly int spinSpeedMAX = ViewerConstants.SPIN_SPEEDS.Length;
+        public static readonly int marginMAX = ViewerConstants.MARGINS.Length;
+
 
         /// <summary>
         /// My guess is this setups a shader handy for drawing lines?
@@ -96,7 +114,22 @@ namespace VesselView
         }
 
         public static float MAX_ALTITUDE = 250;
+
+
+        //public static bool VVDEBUG = true;
+
+
+        /// <summary>
+        /// Because On/Off is nicer and shorter than True/False
+        /// </summary>
+        /// <returns></returns>
+        public static string boolAsString(bool boolean)
+        {
+            return (boolean) ? "On" : "Off";
+        }
     }
 
+        
+        
         
 }

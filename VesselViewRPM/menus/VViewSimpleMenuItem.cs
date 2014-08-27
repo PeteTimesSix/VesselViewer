@@ -6,9 +6,9 @@ using System.Text;
 using VesselView;
 using UnityEngine;
 
-namespace VesselViewRPM
+namespace VesselViewRPM.menus
 {
-    class VViewSimpleMenuItem
+    public class VViewSimpleMenuItem : IVVSimpleMenuItem
     {
         public string label;
         private ViewerSettings settings;
@@ -68,60 +68,6 @@ namespace VesselViewRPM
             //this.changeMode = changeMode;
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <returns>Menu to change to, null if stay</returns>
-        internal IVViewMenu click()
-        {
-            //MonoBehaviour.print("CLICK on " + label);
-            //MonoBehaviour.print("looking for " + targetProperty);
-
-            if (settings != null & !targetProperty.Equals(""))
-            {
-                FieldInfo fieldInfo = settings.GetType().GetField(targetProperty);
-                //MonoBehaviour.print("fieldInfo> " + fieldInfo);
-                object value = fieldInfo.GetValue(settings);
-                //MonoBehaviour.print("value> " + value);
-                if (value is bool) 
-                {
-                    fieldInfo.SetValue(settings, !(bool)(value));
-                }
-                else if (value is int) 
-                {
-                    if (setValue) 
-                    {
-                        if(!addValue)
-                            fieldInfo.SetValue(settings, this.value);
-                        else 
-                        {
-                            int curVal = (int)fieldInfo.GetValue(settings);
-                            fieldInfo.SetValue(settings, curVal + this.value);
-                        }
-                    }
-                    else 
-                    {
-                        FieldInfo fieldInfoMax = settings.GetType().GetField(targetProperty + "MAX");
-                        int valNum = (int)(value) + 1;
-                        if (valNum >= (int)(fieldInfoMax.GetValue(settings))) valNum = 0;
-                        fieldInfo.SetValue(settings, valNum);
-                    }
-                    
-                }
-                /*if (changeValueDirect)
-                {
-                    //settings.setPropertyByID(propertyToChangeID, changeMode, changeValue);
-                }
-                else
-                {
-                    //int value;
-                    //int.TryParse(settings.getPropertyByID(changeValue), out value);
-                    //settings.setPropertyByID(propertyToChangeID, changeMode, value);
-                }*/
-            }          
-            return menuToChangeTo;
-        }
-
         public override string ToString() {
             if (settings == null)
             {
@@ -135,6 +81,53 @@ namespace VesselViewRPM
                     return label + settings.getPropertyDesc(displayProperty);
                 //return label + settings.getSmartPropertyByID(propertyToPrintID);
             }
+        }
+
+        public IVViewMenu click()
+        {
+            if (settings != null & !targetProperty.Equals(""))
+            {
+                FieldInfo fieldInfo = settings.GetType().GetField(targetProperty);
+                //MonoBehaviour.print("fieldInfo> " + fieldInfo);
+                object value = fieldInfo.GetValue(settings);
+                //MonoBehaviour.print("value> " + value);
+                if (value is bool)
+                {
+                    fieldInfo.SetValue(settings, !(bool)(value));
+                }
+                else if (value is int)
+                {
+                    if (setValue)
+                    {
+                        if (!addValue)
+                            fieldInfo.SetValue(settings, this.value);
+                        else
+                        {
+                            int curVal = (int)fieldInfo.GetValue(settings);
+                            fieldInfo.SetValue(settings, curVal + this.value);
+                        }
+                    }
+                    else
+                    {
+                        FieldInfo fieldInfoMax = typeof(ViewerConstants).GetField(targetProperty + "MAX");
+                        int valNum = (int)(value) + 1;
+                        if (valNum >= (int)(fieldInfoMax.GetValue(settings))) valNum = 0;
+                        fieldInfo.SetValue(settings, valNum);
+                    }
+
+                }
+                /*if (changeValueDirect)
+                {
+                    //settings.setPropertyByID(propertyToChangeID, changeMode, changeValue);
+                }
+                else
+                {
+                    //int value;
+                    //int.TryParse(settings.getPropertyByID(changeValue), out value);
+                    //settings.setPropertyByID(propertyToChangeID, changeMode, value);
+                }*/
+            }
+            return menuToChangeTo;
         }
     }
 }

@@ -44,14 +44,14 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CustomPartTree.cs" />
-    <Compile Include="CustomPartTreeItem.cs" />
     <Compile Include="InternalVesselView.cs" />
+    <Compile Include="menus\IVVSimpleMenuItem.cs" />
     <Compile Include="menus\IVViewMenu.cs" />
+    <Compile Include="menus\VViewCustomMenusMenu.cs" />
+    <Compile Include="menus\VViewSimpleCustomMenuItem.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="menus\VViewSimpleMenu.cs" />
     <Compile Include="menus\VViewSimpleMenuItem.cs" />
-    <Compile Include="menus\VViewMenuPartSelector.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\VesselView\VesselView.csproj">
