@@ -18,7 +18,7 @@ namespace VVPartSelector
         void Start()
         {
             VViewCustomMenusMenu.registerMenu(createMenu);
-            VesselViewPlugin.registerCustomMode(setup());
+            //VesselViewPlugin.registerCustomMode(setup());
         }
 
         private CustomModeSettings setup() 
