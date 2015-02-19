@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using VesselViewRPM.menus;
 using VesselView;
+using UnityEngine;
 
 namespace VVPartSelector
 {
@@ -14,6 +15,9 @@ namespace VVPartSelector
         //private ViewerSettings settings;
         private CustomModeSettings customSettings;
         private string name = "Part selector";
+        private int scrollOffset = 0;
+        //private int lastLineCount = 0;
+        //private int lastPointerPos = 0;
 
         internal bool zoomOnSelection = false;
         internal bool symmetryMode = false;
@@ -50,25 +54,28 @@ namespace VVPartSelector
 
         public void printMenu(ref StringBuilder builder, int width, int height)
         {
-            //builder.AppendLine("WIP");
+
             
+                //builder.AppendLine("WIP");
+            //if (lastLineCount <= height) scrollOffset = 0;
+            //else if (lastLineCount - height < scrollOffset) scrollOffset = lastLineCount - height;
+
+            int linesPrinted = 1;
+            int pointerPosition = 0;
+
             if (tree.selectedItem != null) {
-                builder.AppendLine("-" + tree.selectedItem.associatedPart.name + "-");
+                if (linesPrinted >= scrollOffset)
+                {
+                    builder.AppendLine("-" + tree.selectedItem.associatedPart.name + "-");
+                }
+                linesPrinted++;
                 if (tree.selectedItem.hasChildrn) {
                     if (tree.selectedItem.childrnExpanded)
                     {
-                        builder.Append("[-]PARTS");
-                        if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.EXPAND_PARTS)
+                        if (linesPrinted >= scrollOffset)
                         {
-                            builder.AppendLine(" <");
-                        }
-                        else {
-                            builder.AppendLine("");
-                        }
-                        int counter = 0;
-                        foreach (CustomPartTreeItem partItem in tree.selectedItem.children) {
-                            builder.Append(partItem.associatedPart.name);
-                            if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.PARTS & counter == tree.selectedItem.selectedLine)
+                            builder.Append("[-]PARTS");
+                            if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.EXPAND_PARTS)
                             {
                                 builder.AppendLine(" <");
                             }
@@ -76,59 +83,114 @@ namespace VVPartSelector
                             {
                                 builder.AppendLine("");
                             }
+                        }
+                        linesPrinted++;
+                        if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.EXPAND_PARTS) pointerPosition = linesPrinted;
+                        int counter = 0;
+                        foreach (CustomPartTreeItem partItem in tree.selectedItem.children) {
+                            if (linesPrinted >= scrollOffset)
+                            {
+                                builder.Append(partItem.associatedPart.name);
+                                if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.PARTS & counter == tree.selectedItem.selectedLine)
+                                {
+                                    builder.AppendLine(" <");
+                                }
+                                else
+                                {
+                                    builder.AppendLine("");
+                                }
+                            }
+                            linesPrinted++;
+
+                            if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.PARTS & counter == tree.selectedItem.selectedLine) pointerPosition = linesPrinted;
                             counter++;
                         }
                     }
                     else {
-                        builder.Append("[+]PARTS");
-                        if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.EXPAND_PARTS)
+                        if (linesPrinted >= scrollOffset)
                         {
-                            builder.AppendLine(" <");
+                            builder.Append("[+]PARTS");
+                            if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.EXPAND_PARTS)
+                            {
+                                builder.AppendLine(" <");
+                            }
+                            else {
+                                builder.AppendLine("");
+                            }
                         }
-                        else {
-                            builder.AppendLine("");
-                        }
+                        linesPrinted++;
+                        if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.EXPAND_PARTS) pointerPosition = linesPrinted;
                     }
                 }
                 if (tree.selectedItem.hasActions)
                 {
                     if (tree.selectedItem.actionsExpanded)
                     {
-                        builder.Append("[-]ACTIONS");
-                        if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.EXPAND_ACTIONS)
+                        if (linesPrinted >= scrollOffset)
                         {
-                            builder.AppendLine(" <");
-                        }
-                        else {
-                            builder.AppendLine("");
-                        }
-                        int counter = 0;
-                        foreach (BaseEvent action in tree.selectedItem.getActivableEvents()) {
-                            builder.Append(action.guiName);
-                            if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.ACTIONS & counter == tree.selectedItem.selectedLine)
+                            builder.Append("[-]ACTIONS");
+                            if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.EXPAND_ACTIONS)
                             {
                                 builder.AppendLine(" <");
                             }
-                            else
-                            {
+                            else {
                                 builder.AppendLine("");
                             }
+                        }
+                        linesPrinted++;
+                        if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.EXPAND_ACTIONS) pointerPosition = linesPrinted;
+                        int counter = 0;
+                        foreach (BaseEvent action in tree.selectedItem.getActivableEvents()) {
+                            if (linesPrinted >= scrollOffset)
+                            {
+                                builder.Append(action.guiName);
+                                if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.ACTIONS & counter == tree.selectedItem.selectedLine)
+                                {
+                                    builder.AppendLine(" <");
+                                }
+                                else
+                                {
+                                    builder.AppendLine("");
+                                }
+                            }
+                            linesPrinted++;
+                            if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.ACTIONS & counter == tree.selectedItem.selectedLine) pointerPosition = linesPrinted;
                             counter++;              
                         }
                     }
                     else
                     {
-                        builder.Append("[+]ACTIONS");
-                        if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.EXPAND_ACTIONS)
-                            {
-                                builder.AppendLine(" <");
-                            }
-                        else {
-                            builder.AppendLine("");
+                        if (linesPrinted >= scrollOffset)
+                        {
+                            builder.Append("[+]ACTIONS");
+                            if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.EXPAND_ACTIONS)
+                                {
+                                    builder.AppendLine(" <");
+                                }
+                            else {
+                                    builder.AppendLine("");
+                                }
                         }
+                        linesPrinted++;
+                        if (tree.selectedItem.selectionMode == (int)SELECTIONMODES.EXPAND_ACTIONS) pointerPosition = linesPrinted;
                     }
                 }
             }
+            /*if(pointerPosition!=lastPointerPos)
+            MonoBehaviour.print("lastLineCount =" + lastLineCount + ", scrOffset = " + scrollOffset);
+
+            
+
+            if (pointerPosition != lastPointerPos)
+            MonoBehaviour.print("Lines printed " + linesPrinted + ", pointer pos:" + pointerPosition);
+            if (pointerPosition != lastPointerPos)
+            MonoBehaviour.print("Ranging from"+scrollOffset+" to "+(scrollOffset+height));)
+
+            lastPointerPos = pointerPosition;*/
+
+            //lastLineCount = linesPrinted;
+            if (pointerPosition + 1 >= height + scrollOffset) scrollOffset = pointerPosition - height + 2;
+            if (pointerPosition - 1 <= scrollOffset) scrollOffset = pointerPosition - 2;
 
         }
 
