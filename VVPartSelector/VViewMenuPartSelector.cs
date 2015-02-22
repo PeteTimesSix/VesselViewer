@@ -13,25 +13,41 @@ namespace VVPartSelector
         private CustomPartTree tree;
         private IVViewMenu rootMenu;
         //private ViewerSettings settings;
-        private CustomModeSettings customSettings;
         private string name = "Part selector";
         private int scrollOffset = 0;
         //private int lastLineCount = 0;
         //private int lastPointerPos = 0;
 
-        internal bool zoomOnSelection = false;
-        internal bool symmetryMode = false;
+        private bool active = false;
 
+        private SelectorDataContainer master;
 
         public enum SELECTIONMODES {
             NONE, EXPAND_PARTS, PARTS, EXPAND_ACTIONS, ACTIONS
         }
 
+        public enum SELECTORTYPE
+        {
+            TREE, GLOBAL
+        }
+
+        private SELECTORTYPE type;
+
         //private int selectedLine = 0;
         //private int selectionMode = (int)SELECTIONMODES.EXPAND_PARTS;
-        
-        public VViewMenuPartSelector() {
-            tree = new CustomPartTree(FlightGlobals.ActiveVessel);
+
+        public VViewMenuPartSelector(SELECTORTYPE type, SelectorDataContainer dataContainer)
+        {
+            this.type = type;
+            this.master = dataContainer;
+            switch (type) 
+            {
+                case SELECTORTYPE.TREE:
+                    tree = new CustomPartTree(FlightGlobals.ActiveVessel);
+                    break;
+                case SELECTORTYPE.GLOBAL:
+                    break;
+            }
         }
 
         public Part getSubselection() 
@@ -53,6 +69,18 @@ namespace VVPartSelector
         }
 
         public void printMenu(ref StringBuilder builder, int width, int height)
+        {
+            switch (type) 
+            {
+                case SELECTORTYPE.TREE:
+                    printTreeMenu(ref builder, width, height);
+                    break;
+                case SELECTORTYPE.GLOBAL:
+                    break;
+            }
+        }
+
+        public void printTreeMenu(ref StringBuilder builder, int width, int height)
         {
 
             
@@ -312,19 +340,19 @@ namespace VVPartSelector
                 }
             }
             }
-            customSettings.focusSubset.Clear();
-            if (zoomOnSelection)
+            master.CustomSettings.focusSubset.Clear();
+            if (master.getZoom())
             {
                 if (tree.selectedItem != null)
                 {
-                    if (symmetryMode)
+                    if (master.getSymm())
                     {
                         foreach (Part symPart in tree.selectedItem.associatedPart.symmetryCounterparts)
                         {
-                            customSettings.focusSubset.Add(symPart);
+                            master.CustomSettings.focusSubset.Add(symPart);
                         }
                     }
-                    customSettings.focusSubset.Add(tree.selectedItem.associatedPart);
+                    master.CustomSettings.focusSubset.Add(tree.selectedItem.associatedPart);
                 }
             }      
         }
@@ -401,19 +429,19 @@ namespace VVPartSelector
                     }
                 }
             }
-            customSettings.focusSubset.Clear();
-            if (zoomOnSelection) 
+            master.CustomSettings.focusSubset.Clear();
+            if (master.getZoom()) 
             {
                 if (tree.selectedItem != null)
                 {
-                    if (symmetryMode)
+                    if (master.getSymm())
                     {
                         foreach (Part symPart in tree.selectedItem.associatedPart.symmetryCounterparts)
                         {
-                            customSettings.focusSubset.Add(symPart);
+                            master.CustomSettings.focusSubset.Add(symPart);
                         }
                     }
-                    customSettings.focusSubset.Add(tree.selectedItem.associatedPart);
+                    master.CustomSettings.focusSubset.Add(tree.selectedItem.associatedPart);
                 }
             }       
         }
@@ -441,7 +469,7 @@ namespace VVPartSelector
 
                         //REALLY a lot easier than expected
 
-                        if (symmetryMode){
+                        if (master.getSymm()){
                             string name = tree.selectedItem.getActivableEvents()[tree.selectedItem.selectedLine].guiName;
                             foreach (Part part in tree.selectedItem.associatedPart.symmetryCounterparts) {
                                 if (part == null) continue;
@@ -467,19 +495,19 @@ namespace VVPartSelector
                         break;
                 }
             }
-            customSettings.focusSubset.Clear();
-            if (zoomOnSelection)
+            master.CustomSettings.focusSubset.Clear();
+            if (master.getZoom())
             {
                 if (tree.selectedItem != null)
                 {
-                    if (symmetryMode)
+                    if (master.getSymm())
                     {
                         foreach (Part symPart in tree.selectedItem.associatedPart.symmetryCounterparts)
                         {
-                            customSettings.focusSubset.Add(symPart);
+                            master.CustomSettings.focusSubset.Add(symPart);
                         }
                     }
-                    customSettings.focusSubset.Add(tree.selectedItem.associatedPart);
+                    master.CustomSettings.focusSubset.Add(tree.selectedItem.associatedPart);
                 }
             }      
             return null;
@@ -495,19 +523,19 @@ namespace VVPartSelector
                 else
                 {
                     tree.selectedItem = tree.selectedItem.root;
-                    customSettings.focusSubset.Clear();
-                    if (zoomOnSelection)
+                    master.CustomSettings.focusSubset.Clear();
+                    if (master.getZoom())
                     {
                         if (tree.selectedItem != null)
                         {
-                            if (symmetryMode)
+                            if (master.getSymm())
                             {
                                 foreach (Part symPart in tree.selectedItem.associatedPart.symmetryCounterparts)
                                 {
-                                    customSettings.focusSubset.Add(symPart);
+                                    master.CustomSettings.focusSubset.Add(symPart);
                                 }
                             }
-                            customSettings.focusSubset.Add(tree.selectedItem.associatedPart);
+                            master.CustomSettings.focusSubset.Add(tree.selectedItem.associatedPart);
                         }
                     }      
                     return null;
@@ -538,26 +566,28 @@ namespace VVPartSelector
 
         public void activate()
         {
-            customSettings.focusSubset.Clear();
-            if (zoomOnSelection)
+            active = true;
+            master.CustomSettings.focusSubset.Clear();
+            if (master.getZoom())
             {
                 if (tree.selectedItem != null)
                 {
-                    if (symmetryMode)
+                    if (master.getSymm())
                     {
                         foreach (Part symPart in tree.selectedItem.associatedPart.symmetryCounterparts)
                         {
-                            customSettings.focusSubset.Add(symPart);
+                            master.CustomSettings.focusSubset.Add(symPart);
                         }
                     }
-                    customSettings.focusSubset.Add(tree.selectedItem.associatedPart);
+                    master.CustomSettings.focusSubset.Add(tree.selectedItem.associatedPart);
                 }
             }      
         }
 
         public void deactivate()
         {
-            customSettings.focusSubset.Clear();
+            active = false;
+            master.CustomSettings.focusSubset.Clear();
         }
 
 
@@ -567,15 +597,9 @@ namespace VVPartSelector
         }
 
 
-        public CustomModeSettings getCustomSettings()
+        internal bool isActive()
         {
-            return customSettings;
-        }
-
-
-        public void setCustomSettings(CustomModeSettings settings)
-        {
-            customSettings = settings;
+            return active;
         }
     }
 }

@@ -41,9 +41,6 @@
     <Reference Include="VesselView">
       <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\SteamApps\common\Kerbal Space Program\GameData\VesselView\Plugins\VesselView.dll</HintPath>
     </Reference>
-    <Reference Include="VesselViewPlugin">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\SteamApps\common\Kerbal Space Program\GameData\VesselView\Plugins\VesselViewPlugin.dll</HintPath>
-    </Reference>
     <Reference Include="VesselViewRPM">
       <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\SteamApps\common\Kerbal Space Program\GameData\VesselView\Plugins\VesselViewRPM.dll</HintPath>
     </Reference>
@@ -52,6 +49,12 @@
     <Compile Include="DiscoData.cs" />
     <Compile Include="VVDiscoDisplay.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\VesselViewPlugin\VesselViewPlugin.csproj">
+      <Project>{bd4a4aa0-5a4e-4e64-9a91-577027ca30b3}</Project>
+      <Name>VesselViewPlugin</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

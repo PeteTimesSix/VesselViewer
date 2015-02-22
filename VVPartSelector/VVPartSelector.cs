@@ -57,16 +57,16 @@ namespace VVPartSelector
             SelectorDataContainer container = (SelectorDataContainer)settings.dataInstance;
 
             IVVSimpleMenuItem[] INTItems = {
-                 new VViewSimpleMenuItem("Part selector (tree-traversal)",container.selector),
+                 new VViewSimpleMenuItem("Part selector (tree-traversal)",container.selectorTree),
+                 new VViewSimpleMenuItem("Part selector (global list)",container.selectorGlobal),
                  new VViewSimpleCustomMenuItem("Zoom on selection:",container.getZoom,container.setZoom),
                  new VViewSimpleCustomMenuItem("Affect symmetry:",container.getSymm,container.setSymm)
                                        };
             VViewSimpleMenu rootMenu = new VViewSimpleMenu(INTItems, "Part selector");
-            container.selector.setRoot((IVViewMenu)rootMenu);
-            container.selector.setCustomSettings(settings);
+            container.selectorTree.setRoot((IVViewMenu)rootMenu);
+            container.selectorGlobal.setRoot((IVViewMenu)rootMenu);
+            container.CustomSettings = settings;
             rootMenu.setCustomSettings(settings);
-
-            
 
             return rootMenu;
         }
@@ -96,9 +96,16 @@ namespace VVPartSelector
 
         public Color getBoxColorSelectMode(CustomModeSettings customMode,Part part)
         {
-            Part subselect = ((SelectorDataContainer)(customMode.dataInstance)).selector.getSubselection();
-            if (part == subselect) return Color.cyan;
-            return Color.black;
+            if (((SelectorDataContainer)(customMode.dataInstance)).selectorTree.isActive())
+            {
+                Part subselect = ((SelectorDataContainer)(customMode.dataInstance)).selectorTree.getSubselection();
+                if (part == subselect) return Color.cyan;
+            }
+            else if (((SelectorDataContainer)(customMode.dataInstance)).selectorGlobal.isActive())
+            {
+                return Color.white;
+            }
+            else return Color.black;
         }
 
         public Color getPartColorSelectMode(CustomModeSettings customMode,Part part)

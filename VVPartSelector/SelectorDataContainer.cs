@@ -2,18 +2,35 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using VesselView;
 
 namespace VVPartSelector
 {
     class SelectorDataContainer
     {
 
-        internal VViewMenuPartSelector selector = new VViewMenuPartSelector();
+        internal VViewMenuPartSelector selectorTree;
+        internal VViewMenuPartSelector selectorGlobal;
 
-        internal bool getZoom() { return selector.zoomOnSelection; }
-        internal void setZoom(bool val) { selector.zoomOnSelection = val; }
-        internal bool getSymm() { return selector.symmetryMode; }
-        internal void setSymm(bool val) { selector.symmetryMode = val; }
+        private bool zoomOnSelection = false;
+        private bool symmetryMode = false;
+        private CustomModeSettings customSettings;
 
+        public CustomModeSettings CustomSettings
+        {
+            get { return customSettings; }
+            set { customSettings = value; }
+        }
+
+        internal bool getZoom() { return zoomOnSelection; }
+        internal void setZoom(bool val) { zoomOnSelection = val; }
+        internal bool getSymm() { return symmetryMode; }
+        internal void setSymm(bool val) { symmetryMode = val; }
+
+        public SelectorDataContainer()
+        {
+            selectorTree = new VViewMenuPartSelector(VViewMenuPartSelector.SELECTORTYPE.TREE, this);
+            selectorGlobal = new VViewMenuPartSelector(VViewMenuPartSelector.SELECTORTYPE.GLOBAL, this);
+        }
     }
 }
