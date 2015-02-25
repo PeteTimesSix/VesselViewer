@@ -6,11 +6,11 @@ using VesselView;
 
 namespace VVPartSelector
 {
-    class SelectorDataContainer
+    public class SelectorDataContainer
     {
 
-        internal VViewMenuPartSelector selectorTree;
-        internal VViewMenuPartSelector selectorGlobal;
+        internal VViewMenuPartSelectorTree selectorTree;
+        internal VViewMenuPartSelectorGlobal selectorGlobal;
 
         private bool zoomOnSelection = false;
         private bool symmetryMode = false;
@@ -29,8 +29,8 @@ namespace VVPartSelector
 
         public SelectorDataContainer()
         {
-            selectorTree = new VViewMenuPartSelector(VViewMenuPartSelector.SELECTORTYPE.TREE, this);
-            selectorGlobal = new VViewMenuPartSelector(VViewMenuPartSelector.SELECTORTYPE.GLOBAL, this);
+            selectorTree = new VViewMenuPartSelectorTree(this);
+            selectorGlobal = new VViewMenuPartSelectorGlobal(this);
         }
     }
 }

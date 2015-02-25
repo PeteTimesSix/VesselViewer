@@ -96,35 +96,50 @@ namespace VVPartSelector
 
         public Color getBoxColorSelectMode(CustomModeSettings customMode,Part part)
         {
-            if (((SelectorDataContainer)(customMode.dataInstance)).selectorTree.isActive())
+            if (((SelectorDataContainer)(customMode.dataInstance)).selectorTree.Active)
             {
                 Part subselect = ((SelectorDataContainer)(customMode.dataInstance)).selectorTree.getSubselection();
                 if (part == subselect) return Color.cyan;
+                else return Color.black;
             }
-            else if (((SelectorDataContainer)(customMode.dataInstance)).selectorGlobal.isActive())
+            else if (((SelectorDataContainer)(customMode.dataInstance)).selectorGlobal.Active)
             {
-                return Color.white;
+                List<Part> parts = ((SelectorDataContainer)(customMode.dataInstance)).selectorGlobal.getPartsMatchingSelection();
+                if (parts == null) {MonoBehaviour.print("part list null"); return Color.red;}
+                if (part == null) { MonoBehaviour.print("part itself null"); return Color.red; }
+                if (parts.Contains(part)) return Color.cyan;
+                else return Color.black;
             }
             else return Color.black;
         }
 
         public Color getPartColorSelectMode(CustomModeSettings customMode,Part part)
         {
-           
-            Color darkGreen = Color.green;
-            darkGreen.g = 0.6f;
-            darkGreen.r = 0.3f;
-            darkGreen.b = 0.3f;
-            Part selectedPart = ((SelectorDataContainer)(customMode.dataInstance)).selector.getSelection();
-            if (selectedPart == null) return Color.grey;
-            if (part == selectedPart) return Color.green;
-            if (((SelectorDataContainer)(customMode.dataInstance)).selector.symmetryMode)
+            if (((SelectorDataContainer)(customMode.dataInstance)).selectorTree.Active)
             {
-                if (selectedPart.symmetryCounterparts.Contains(part)) return darkGreen;
+                Color darkGreen = Color.green;
+                darkGreen.g = 0.6f;
+                darkGreen.r = 0.3f;
+                darkGreen.b = 0.3f;
+                Part selectedPart = ((SelectorDataContainer)(customMode.dataInstance)).selectorTree.getSelection();
+                if (selectedPart == null) return Color.grey;
+                if (part == selectedPart) return Color.green;
+                if (((SelectorDataContainer)(customMode.dataInstance)).getSymm())
+                {
+                    if (selectedPart.symmetryCounterparts.Contains(part)) return darkGreen;
+                }
+                if (partIsOnWayToRoot(part, selectedPart, FlightGlobals.ActiveVessel.rootPart)) return Color.yellow;
+                if (part == FlightGlobals.ActiveVessel.rootPart) return Color.magenta;
+                return Color.gray;
             }
-            if (partIsOnWayToRoot(part, selectedPart, FlightGlobals.ActiveVessel.rootPart)) return Color.yellow;
-            if (part == FlightGlobals.ActiveVessel.rootPart) return Color.magenta;
-            return Color.white;
+            else if (((SelectorDataContainer)(customMode.dataInstance)).selectorGlobal.Active)
+            {
+                List<Part> parts = ((SelectorDataContainer)(customMode.dataInstance)).selectorGlobal.getPartsMatchingSelection();
+                if (parts.Contains(part)) return Color.green;
+                else return Color.gray;
+            }
+            else return Color.gray;
+            
         }
 
         

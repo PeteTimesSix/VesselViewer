@@ -21,7 +21,7 @@ namespace VVPartSelector
         public bool hasActions = false;
 
         public int selectedLine = 0;
-        public int selectionMode = (int)VViewMenuPartSelector.SELECTIONMODES.PARTS;
+        public int selectionMode = (int)VViewMenuPartSelectorTree.SELECTIONMODES.PARTS;
 
         public CustomPartTreeItem(Part part, CustomPartTreeItem root) {
             this.associatedPart = part;

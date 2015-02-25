@@ -8,46 +8,36 @@ using UnityEngine;
 
 namespace VVPartSelector
 {
-    public class VViewMenuPartSelector : IVViewMenu
+    public class VViewMenuPartSelectorTree : IVViewMenu
     {
         private CustomPartTree tree;
         private IVViewMenu rootMenu;
         //private ViewerSettings settings;
-        private string name = "Part selector";
+        //private CustomModeSettings customSettings;
+        private string name = "Part selector (tree)";
         private int scrollOffset = 0;
-        //private int lastLineCount = 0;
-        //private int lastPointerPos = 0;
 
         private bool active = false;
 
+        public bool Active
+        {
+            get { return active; }
+        }
+
         private SelectorDataContainer master;
+
 
         public enum SELECTIONMODES {
             NONE, EXPAND_PARTS, PARTS, EXPAND_ACTIONS, ACTIONS
         }
 
-        public enum SELECTORTYPE
-        {
-            TREE, GLOBAL
-        }
-
-        private SELECTORTYPE type;
-
         //private int selectedLine = 0;
         //private int selectionMode = (int)SELECTIONMODES.EXPAND_PARTS;
 
-        public VViewMenuPartSelector(SELECTORTYPE type, SelectorDataContainer dataContainer)
+        public VViewMenuPartSelectorTree(SelectorDataContainer master)
         {
-            this.type = type;
-            this.master = dataContainer;
-            switch (type) 
-            {
-                case SELECTORTYPE.TREE:
-                    tree = new CustomPartTree(FlightGlobals.ActiveVessel);
-                    break;
-                case SELECTORTYPE.GLOBAL:
-                    break;
-            }
+            this.master = master;
+            tree = new CustomPartTree(FlightGlobals.ActiveVessel);
         }
 
         public Part getSubselection() 
@@ -69,18 +59,6 @@ namespace VVPartSelector
         }
 
         public void printMenu(ref StringBuilder builder, int width, int height)
-        {
-            switch (type) 
-            {
-                case SELECTORTYPE.TREE:
-                    printTreeMenu(ref builder, width, height);
-                    break;
-                case SELECTORTYPE.GLOBAL:
-                    break;
-            }
-        }
-
-        public void printTreeMenu(ref StringBuilder builder, int width, int height)
         {
 
             
@@ -566,7 +544,6 @@ namespace VVPartSelector
 
         public void activate()
         {
-            active = true;
             master.CustomSettings.focusSubset.Clear();
             if (master.getZoom())
             {
@@ -581,13 +558,14 @@ namespace VVPartSelector
                     }
                     master.CustomSettings.focusSubset.Add(tree.selectedItem.associatedPart);
                 }
-            }      
+            }
+            active = true;
         }
 
         public void deactivate()
         {
-            active = false;
             master.CustomSettings.focusSubset.Clear();
+            active = false;
         }
 
 
@@ -597,9 +575,15 @@ namespace VVPartSelector
         }
 
 
-        internal bool isActive()
+        public CustomModeSettings getCustomSettings()
         {
-            return active;
+            return master.CustomSettings;
+        }
+
+
+        public void setCustomSettings(CustomModeSettings settings)
+        {
+            master.CustomSettings = settings;
         }
     }
 }
