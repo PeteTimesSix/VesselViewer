@@ -105,8 +105,14 @@ namespace VVPartSelector
             else if (((SelectorDataContainer)(customMode.dataInstance)).selectorGlobal.Active)
             {
                 List<Part> parts = ((SelectorDataContainer)(customMode.dataInstance)).selectorGlobal.getPartsMatchingSelection();
-                if (parts == null) {MonoBehaviour.print("part list null"); return Color.red;}
-                if (part == null) { MonoBehaviour.print("part itself null"); return Color.red; }
+                //if (parts == null) {MonoBehaviour.print("part list null"); return Color.red;}
+                //if (part == null) { MonoBehaviour.print("part itself null"); return Color.red; }
+                if (parts.Contains(part)) return Color.cyan;
+                else return Color.black;
+            }
+            else if (((SelectorDataContainer)(customMode.dataInstance)).selectorSubmenu != null)
+            {
+                List<Part> parts = ((SelectorDataContainer)(customMode.dataInstance)).selectorSubmenu.getSelectedParts();
                 if (parts.Contains(part)) return Color.cyan;
                 else return Color.black;
             }
@@ -135,6 +141,12 @@ namespace VVPartSelector
             else if (((SelectorDataContainer)(customMode.dataInstance)).selectorGlobal.Active)
             {
                 List<Part> parts = ((SelectorDataContainer)(customMode.dataInstance)).selectorGlobal.getPartsMatchingSelection();
+                if (parts.Contains(part)) return Color.green;
+                else return Color.gray;
+            }
+            else if (((SelectorDataContainer)(customMode.dataInstance)).selectorSubmenu != null)
+            {
+                List<Part> parts = ((SelectorDataContainer)(customMode.dataInstance)).selectorSubmenu.getSelectedParts();
                 if (parts.Contains(part)) return Color.green;
                 else return Color.gray;
             }

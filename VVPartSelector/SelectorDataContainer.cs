@@ -32,5 +32,7 @@ namespace VVPartSelector
             selectorTree = new VViewMenuPartSelectorTree(this);
             selectorGlobal = new VViewMenuPartSelectorGlobal(this);
         }
+
+        internal VVsinglePartSubmenu selectorSubmenu { get; set; }
     }
 }

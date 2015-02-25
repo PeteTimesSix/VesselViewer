@@ -25,36 +25,42 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
+    <OutputPath>..\..\..\..\..\..\..\Program Files %28x86%29\Steam\SteamApps\common\Kerbal Space Program\GameData\VesselView\Plugins\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Assembly-CSharp">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\SteamApps\common\Kerbal Space Program\KSP_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\SteamApps\common\Kerbal Space Program\KSP_Data\Managed\Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp-firstpass">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\SteamApps\common\Kerbal Space Program\KSP_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\SteamApps\common\Kerbal Space Program\KSP_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="UnityEngine">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\SteamApps\common\Kerbal Space Program\KSP_Data\Managed\UnityEngine.dll</HintPath>
-    </Reference>
-    <Reference Include="VesselView">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\SteamApps\common\Kerbal Space Program\GameData\VesselView\Plugins\VesselView.dll</HintPath>
-    </Reference>
-    <Reference Include="VesselViewRPM">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\SteamApps\common\Kerbal Space Program\GameData\VesselView\Plugins\VesselViewRPM.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\SteamApps\common\Kerbal Space Program\KSP_Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CustomPartTree.cs" />
     <Compile Include="CustomPartTreeItem.cs" />
     <Compile Include="SelectorDataContainer.cs" />
-    <Compile Include="VViewMenuPartSelector.cs" />
+    <Compile Include="VViewMenuPartSelectorGlobal.cs" />
+    <Compile Include="VViewMenuPartSelectorTree.cs" />
     <Compile Include="VVPartSelector.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="VVsinglePartSubmenu.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\VesselViewRPM\VesselViewRPM.csproj">
+      <Project>{a4582184-d575-4d3c-97d5-5a00fdac73fc}</Project>
+      <Name>VesselViewRPM</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\VesselView\VesselView.csproj">
+      <Project>{9fdb0e00-37db-4d1e-a258-7ada0eb70d49}</Project>
+      <Name>VesselView</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

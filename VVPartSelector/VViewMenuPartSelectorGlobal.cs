@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using UnityEngine;
 using VesselView;
 using VesselViewRPM.menus;
 
@@ -35,10 +36,12 @@ namespace VVPartSelector
         
         public void printMenu(ref StringBuilder builder, int width, int height)
         {
+            //MonoBehaviour.print("scroll:"+scrollOffset);
             int linesPrinted = 1;
             int pointerPosition = -1;
             foreach (String action in actionsList.Keys) 
             {
+                //MonoBehaviour.print("Adding "+action+" to list");
                 if(linesPrinted>=scrollOffset)
                     builder.Append(action);
                 linesPrinted++;
@@ -69,6 +72,7 @@ namespace VVPartSelector
                     return;
                 }
             }
+            resetFocus();
         }
 
         public void down()
@@ -82,12 +86,14 @@ namespace VVPartSelector
                     return;
                 }
             }
+            resetFocus();
         }
 
         public IVViewMenu click()
         {
-            //throw new NotImplementedException();
-            return this;
+            VVsinglePartSubmenu submenu = new VVsinglePartSubmenu(master, selection);
+            submenu.setRoot(this);
+            return submenu;
         }
 
         public IVViewMenu back()
@@ -96,26 +102,35 @@ namespace VVPartSelector
             //throw new NotImplementedException();
         }
 
-        public void activate()
+        private void resetFocus() 
         {
             master.CustomSettings.focusSubset.Clear();
             if (master.getZoom())
             {
                 List<Part> focusSubset = new List<Part>();
-                List<Part> direct = new List<Part>();
-                actionsList.TryGetValue(selection, out direct);
-                focusSubset.Concat(direct);
-                if (master.getSymm()) 
+                List<Part> focusSubsetOrig = new List<Part>();
+                if (actionsList.ContainsKey(selection))
                 {
-                    foreach (Part directPart in direct) 
+                    focusSubsetOrig.AddRange(actionsList[selection]);
+                    focusSubset.AddRange(focusSubsetOrig);
+                }
+                if (master.getSymm())
+                {
+                    foreach (Part directPart in focusSubsetOrig)
                     {
-                        foreach (Part counterpart in directPart.symmetryCounterparts) 
+                        foreach (Part counterpart in directPart.symmetryCounterparts)
                         {
                             if (!focusSubset.Contains(counterpart)) focusSubset.Add(counterpart);
                         }
                     }
                 }
             }
+        }
+
+        public void activate()
+        {
+            //MonoBehaviour.print("Activate call");
+            resetFocus();
             active = true;
         }
 
@@ -142,7 +157,9 @@ namespace VVPartSelector
             {
                 checkPart(part);
             }
-            return this;
+            if(master.getZoom())
+                master.CustomSettings.focusSubset = getPartsMatchingSelection();
+            return null;
         }
 
         private void checkPart(Part part) 
@@ -165,13 +182,6 @@ namespace VVPartSelector
                         }
                         if (partList != null) 
                         {
-                            if (master.getSymm()) 
-                            {
-                                foreach (Part oldPart in partList) 
-                                {
-                                    if (oldPart.symmetryCounterparts.Contains(part)) return;
-                                }
-                            }
                             partList.Add(part);
                         }
                         

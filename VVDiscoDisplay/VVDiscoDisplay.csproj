@@ -25,7 +25,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
+    <OutputPath>..\..\..\..\..\..\..\Program Files %28x86%29\Steam\SteamApps\common\Kerbal Space Program\GameData\VesselView\Plugins\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -38,12 +38,6 @@
     <Reference Include="UnityEngine">
       <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\SteamApps\common\Kerbal Space Program\KSP_Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
-    <Reference Include="VesselView">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\SteamApps\common\Kerbal Space Program\GameData\VesselView\Plugins\VesselView.dll</HintPath>
-    </Reference>
-    <Reference Include="VesselViewRPM">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\SteamApps\common\Kerbal Space Program\GameData\VesselView\Plugins\VesselViewRPM.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DiscoData.cs" />
@@ -54,6 +48,14 @@
     <ProjectReference Include="..\VesselViewPlugin\VesselViewPlugin.csproj">
       <Project>{bd4a4aa0-5a4e-4e64-9a91-577027ca30b3}</Project>
       <Name>VesselViewPlugin</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\VesselViewRPM\VesselViewRPM.csproj">
+      <Project>{a4582184-d575-4d3c-97d5-5a00fdac73fc}</Project>
+      <Name>VesselViewRPM</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\VesselView\VesselView.csproj">
+      <Project>{9fdb0e00-37db-4d1e-a258-7ada0eb70d49}</Project>
+      <Name>VesselView</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
