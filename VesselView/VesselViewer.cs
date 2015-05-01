@@ -1565,12 +1565,12 @@ namespace VesselView
                     Color color = new Color(0.2f, 0.2f, 0.2f);
                     if (part.maxTemp != 0)
                     {
-                        float tempDiff = part.temperature / part.maxTemp;
+                        double tempDiff = part.temperature / part.maxTemp;
                         //to power of THREE to emphasise overheating parts MORE
-                        tempDiff = (float)Math.Pow(tempDiff, 3);
+                        tempDiff = Math.Pow(tempDiff, 3);
                         //color.g = 0.2f;
-                        color.b = 0.2f * (1 - tempDiff);
-                        color.r = 0.2f + tempDiff*0.8f;
+                        color.b = (float)(0.2f * (1 - tempDiff));
+                        color.r = (float)(0.2f + tempDiff * 0.8f);
                         return color;
                     }
                     else

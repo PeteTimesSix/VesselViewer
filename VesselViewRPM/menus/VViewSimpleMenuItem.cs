@@ -87,10 +87,11 @@ namespace VesselViewRPM.menus
         {
             if (settings != null & !targetProperty.Equals(""))
             {
+                MonoBehaviour.print("targetProperty> " + targetProperty);
                 FieldInfo fieldInfo = settings.GetType().GetField(targetProperty);
-                //MonoBehaviour.print("fieldInfo> " + fieldInfo);
+                MonoBehaviour.print("fieldInfo> " + fieldInfo);
                 object value = fieldInfo.GetValue(settings);
-                //MonoBehaviour.print("value> " + value);
+                MonoBehaviour.print("value> " + value);
                 if (value is bool)
                 {
                     fieldInfo.SetValue(settings, !(bool)(value));

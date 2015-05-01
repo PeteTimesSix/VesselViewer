@@ -10,10 +10,23 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VesselView", "VesselView\VesselView.csproj", "{9FDB0E00-37DB-4D1E-A258-7ADA0EB70D49}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VVPartSelector", "VVPartSelector\VVPartSelector.csproj", "{25066DA6-52BD-4289-A615-6F20A20FB5FE}"
+	ProjectSection(ProjectDependencies) = postProject
+		{9FDB0E00-37DB-4D1E-A258-7ADA0EB70D49} = {9FDB0E00-37DB-4D1E-A258-7ADA0EB70D49}
+		{A4582184-D575-4D3C-97D5-5A00FDAC73FC} = {A4582184-D575-4D3C-97D5-5A00FDAC73FC}
+		{BD4A4AA0-5A4E-4E64-9A91-577027CA30B3} = {BD4A4AA0-5A4E-4E64-9A91-577027CA30B3}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VVDiscoDisplay", "VVDiscoDisplay\VVDiscoDisplay.csproj", "{7FDAF494-8C9B-4803-B8E9-D7D5B0F6E6C1}"
+	ProjectSection(ProjectDependencies) = postProject
+		{9FDB0E00-37DB-4D1E-A258-7ADA0EB70D49} = {9FDB0E00-37DB-4D1E-A258-7ADA0EB70D49}
+		{A4582184-D575-4D3C-97D5-5A00FDAC73FC} = {A4582184-D575-4D3C-97D5-5A00FDAC73FC}
+	EndProjectSection
 EndProject
 Global
+	GlobalSection(SubversionScc) = preSolution
+		Svn-Managed = True
+		Manager = AnkhSVN - Subversion Support for Visual Studio
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU

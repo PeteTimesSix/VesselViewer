@@ -270,13 +270,13 @@ namespace JSI.Handlers
             {
                 itemList.Add(new VViewSimpleMenuItem(ViewerConstants.COLORMODES[i], settings, "colorModeFill", "", i, false));
             }
-            VViewSimpleMenu passiveDisplayFillMENU = new VViewSimpleMenu(itemList.ToArray(), "Passive display (wire)");
+            VViewSimpleMenu passiveDisplayFillMENU = new VViewSimpleMenu(itemList.ToArray(), "Passive display (mesh)");
             itemList.Clear();
-            itemList.Add(new VViewSimpleMenuItem("Color dull:", settings, "colorModeMeshDull", "colorModeMeshDull"));
-            itemList.Add(new VViewSimpleMenuItem("Active: ", settings, "", "colorModeMesh"));
+            itemList.Add(new VViewSimpleMenuItem("Color dull:", settings, "colorModeWireDull", "colorModeWireDull"));
+            itemList.Add(new VViewSimpleMenuItem("Active: ", settings, "", "colorModeWire"));
             for (int i = 0; i < ViewerConstants.COLORMODES.Length; i++)
             {
-                itemList.Add(new VViewSimpleMenuItem(ViewerConstants.COLORMODES[i], settings, "colorModeMesh", "", i, false));
+                itemList.Add(new VViewSimpleMenuItem(ViewerConstants.COLORMODES[i], settings, "colorModeWire", "", i, false));
             }
             VViewSimpleMenu passiveDisplayWireMENU = new VViewSimpleMenu(itemList.ToArray(), "Passive display (wire)");
             itemList.Clear();
@@ -286,7 +286,7 @@ namespace JSI.Handlers
             {
                 itemList.Add(new VViewSimpleMenuItem(ViewerConstants.COLORMODES[i], settings, "colorModeBox", "", i, false));
             }
-            VViewSimpleMenu passiveDisplayBoundsMENU = new VViewSimpleMenu(itemList.ToArray(), "Passive display (mesh)");
+            VViewSimpleMenu passiveDisplayBoundsMENU = new VViewSimpleMenu(itemList.ToArray(), "Passive display (bounds)");
 
             IVVSimpleMenuItem[] PASItems = {
                 new VViewSimpleMenuItem("Passive display (mesh)",passiveDisplayFillMENU),

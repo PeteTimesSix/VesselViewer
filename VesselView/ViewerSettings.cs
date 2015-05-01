@@ -77,7 +77,7 @@ namespace VesselView
             {
                 case "colorModeFill":
                     return ViewerConstants.COLORMODES[colorModeFill];
-                case "colorModeMesh":
+                case "colorModeWire":
                     return ViewerConstants.COLORMODES[colorModeWire];
                 case "colorModeBox":
                     return ViewerConstants.COLORMODES[colorModeBox];
@@ -109,7 +109,7 @@ namespace VesselView
                     return ViewerConstants.boolAsString(colorModeFillDull);
                 case "colorModeBoxDull":
                     return ViewerConstants.boolAsString(colorModeBoxDull);
-                case "colorModeMeshDull":
+                case "colorModeWireDull":
                     return ViewerConstants.boolAsString(colorModeWireDull);
                 /*case "partSelectMode":
                     return boolAsString(partSelectMode);
