@@ -318,7 +318,7 @@ namespace VesselView
         {
             if (settings.screenVisible) 
             {
-                viewer.drawCall(screen, false);
+                viewer.drawCall(screen);
             }        
         }
 

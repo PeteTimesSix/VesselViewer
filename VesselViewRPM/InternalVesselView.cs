@@ -117,7 +117,7 @@ namespace JSI.Handlers
                 }
                 //MonoBehaviour.print("screen draw call");
                 //if (ViewerConstants.VVDEBUG) MonoBehaviour.print("Viewer draw call");
-                viewer.drawCall(screen,true);
+                viewer.drawCall(screen);
                 //MonoBehaviour.print("screen draw call done");
                 return true;
             }

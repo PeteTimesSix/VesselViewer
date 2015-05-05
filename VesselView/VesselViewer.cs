@@ -32,6 +32,8 @@ namespace VesselView
         public ViewerSettings basicSettings=new ViewerSettings();
         public CustomModeSettings customMode;
 
+        private RenderTexture screenBuffer;
+
         //stage counters
         private int stagesLastTime = 0;
         private int stagesThisTimeMax = 0;
@@ -61,7 +63,21 @@ namespace VesselView
             lastUpdate = Time.time - 1f;
         }
 
-        public void drawCall(RenderTexture screen, bool internalScreen) {
+        private void readyTexture(RenderTexture outputTexture) 
+        {
+            if (screenBuffer == null) createTexture(outputTexture);
+            else if (screenBuffer.height != outputTexture.height | screenBuffer.width != outputTexture.width) createTexture(outputTexture);
+        }
+
+        private void createTexture(RenderTexture outputTexture) 
+        {
+            screenBuffer = new RenderTexture(outputTexture.width, outputTexture.height, outputTexture.depth, outputTexture.format);
+        }
+
+        public void drawCall(RenderTexture screen) {
+            readyTexture(screen);
+            RenderTexture activeTexture = screen;
+            screen = screenBuffer;
             //MonoBehaviour.print("VV draw call");
             //Latency mode to limit to one frame per second if FPS is affected
             //also because it happens to look exactly like those NASA screens :3
@@ -118,6 +134,8 @@ namespace VesselView
                 }
 
             }
+            screen = activeTexture;
+            Graphics.Blit(screenBuffer, screen);
             //MonoBehaviour.print("VV draw call done");
         }
 
