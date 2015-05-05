@@ -1565,13 +1565,8 @@ namespace VesselView
                     Color color = new Color(0.2f, 0.2f, 0.2f);
                     if (part.maxTemp != 0)
                     {
-                        double tempDiff = part.temperature / part.maxTemp;
-                        //to power of THREE to emphasise overheating parts MORE
-                        tempDiff = Math.Pow(tempDiff, 3);
-                        //color.g = 0.2f;
-                        color.b = (float)(0.2f * (1 - tempDiff));
-                        color.r = (float)(0.2f + tempDiff * 0.8f);
-                        return color;
+                        float tempDiff = (float)(part.temperature / part.maxTemp);
+                        return genFractColor(tempDiff, true);
                     }
                     else
                     {
@@ -1747,19 +1742,40 @@ namespace VesselView
             return color;
         }
 
-        public Color genFractColor(float fraction) {
-            //find the appropriate color for this specific part
-            Color color = Color.red;
-            //red to yellow to green
-            if (fraction <= 0.5f)
-            {
-                color.g = (float)(fraction * 2);
-            }
-            else
-            {
-                color.r = (float)((1 - fraction) * 2);
-                color.g = 1f;
-            }
+        public Color genFractColor(float fraction)
+        {
+            /* //find the appropriate color for this specific part
+             Color color = Color.red;
+             //red to yellow to green
+             if (fraction <= 0.5f)
+             {
+                 color.g = (float)(fraction * 2);
+             }
+             else
+             {
+                 color.r = (float)((1 - fraction) * 2);
+                 color.g = 1f;
+             }
+             return color;*/
+            return genFractColor(fraction, false);
+        }
+
+        public Color genFractColor(float fraction, bool inverse)
+        {
+            //descending view as default
+            //view as 1.0 to 0.0
+            //inverse - view as 0.0 to 1.0
+
+            Color color = new Color(0, 0, 0);
+
+            float descending = (float)((1 - fraction) * 2);//as fraction grows large, this value grows small
+            float ascending = (float)(fraction * 2);//as fraction grows large, this value grows large
+            descending = descending > 1f ? 1f : descending;
+            ascending = ascending > 1f ? 1f : ascending;
+
+            color.g = inverse ? descending : ascending; //by default, green ascends relative to our fraction
+            color.r = inverse ? ascending : descending; //by default, red descends relative to our fraction
+
             return color;
         }
 
