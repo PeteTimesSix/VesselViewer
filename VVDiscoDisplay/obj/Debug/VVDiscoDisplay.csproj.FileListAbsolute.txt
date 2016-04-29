@@ -1,0 +1,5 @@
+H:\Program Files (x86)\Steam\SteamApps\common\Kerbal Space Program\GameData\VesselView\Plugins\VVDiscoDisplay.dll
+H:\Program Files (x86)\Steam\SteamApps\common\Kerbal Space Program\GameData\VesselView\Plugins\VVDiscoDisplay.pdb
+H:\Paul\Documents\Games\KSP modding\VesselViewer-master\VVDiscoDisplay\obj\Debug\VVDiscoDisplay.csprojResolveAssemblyReference.cache
+H:\Paul\Documents\Games\KSP modding\VesselViewer-master\VVDiscoDisplay\obj\Debug\VVDiscoDisplay.dll
+H:\Paul\Documents\Games\KSP modding\VesselViewer-master\VVDiscoDisplay\obj\Debug\VVDiscoDisplay.pdb

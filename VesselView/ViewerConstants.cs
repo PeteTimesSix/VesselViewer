@@ -79,25 +79,6 @@ namespace VesselView
         public static readonly int spinSpeedMAX = ViewerConstants.SPIN_SPEEDS.Length;
         public static readonly int marginMAX = ViewerConstants.MARGINS.Length;
 
-
-        /// <summary>
-        /// My guess is this setups a shader handy for drawing lines?
-        /// Yoinked from RPM (JSIOrbitDisplay specificaly).
-        /// </summary>
-        /// <returns>line material</returns>
-        public static Material DrawLineMaterial()
-        {
-            var lineMaterial = new Material("Shader \"Lines/Colored Blended\" {" +
-                               "SubShader { Pass {" +
-                               "   BindChannels { Bind \"Color\",color }" +
-                               "   Blend SrcAlpha OneMinusSrcAlpha" +
-                               "   Cull Off Fog { Mode Off }" +
-                               "} } }");
-            lineMaterial.hideFlags = HideFlags.HideAndDontSave;
-            lineMaterial.shader.hideFlags = HideFlags.HideAndDontSave;
-            return lineMaterial;
-        }
-
         /// <summary>
         /// Since Id like the rectangles I save to come with a color.
         /// </summary>

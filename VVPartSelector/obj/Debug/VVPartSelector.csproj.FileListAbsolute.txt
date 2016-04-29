@@ -1,0 +1,5 @@
+H:\Program Files (x86)\Steam\SteamApps\common\Kerbal Space Program\GameData\VesselView\Plugins\VVPartSelector.dll
+H:\Program Files (x86)\Steam\SteamApps\common\Kerbal Space Program\GameData\VesselView\Plugins\VVPartSelector.pdb
+H:\Paul\Documents\Games\KSP modding\VesselViewer-master\VVPartSelector\obj\Debug\VVPartSelector.csprojResolveAssemblyReference.cache
+H:\Paul\Documents\Games\KSP modding\VesselViewer-master\VVPartSelector\obj\Debug\VVPartSelector.dll
+H:\Paul\Documents\Games\KSP modding\VesselViewer-master\VVPartSelector\obj\Debug\VVPartSelector.pdb
