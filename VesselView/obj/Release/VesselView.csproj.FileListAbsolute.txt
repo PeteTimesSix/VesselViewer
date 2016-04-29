@@ -1,0 +1,5 @@
+H:\Program Files (x86)\Steam\SteamApps\common\Kerbal Space Program\GameData\VesselView\Plugins\VesselView.dll
+H:\Program Files (x86)\Steam\SteamApps\common\Kerbal Space Program\GameData\VesselView\Plugins\VesselView.pdb
+H:\Paul\Documents\Games\KSP modding\VesselViewer-master\VesselView\obj\Release\VesselView.csprojResolveAssemblyReference.cache
+H:\Paul\Documents\Games\KSP modding\VesselViewer-master\VesselView\obj\Release\VesselView.dll
+H:\Paul\Documents\Games\KSP modding\VesselViewer-master\VesselView\obj\Release\VesselView.pdb

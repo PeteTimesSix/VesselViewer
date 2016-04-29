@@ -27,7 +27,7 @@ namespace VesselView
         //gradient of colors for stage display
         private Color[] stageGradient;
         //line material
-        private readonly Material lineMaterial = ViewerConstants.DrawLineMaterial();
+        private readonly Material lineMaterial = JSI.JUtil.DrawLineMaterial();
 
         public ViewerSettings basicSettings=new ViewerSettings();
         public CustomModeSettings customMode;
@@ -958,13 +958,13 @@ namespace VesselView
             Vector3 maxVec = new Vector3(float.MinValue, float.MinValue, float.MinValue);
             foreach (MeshFilter meshF in meshFilters)
             {
-                if (!(meshF.renderer == null))
+                if (!(meshF.gameObject.GetComponent<Renderer>() == null))
                 {
                     //only render those meshes that are active
                     //examples of inactive meshes seem to include
                     //parachute canopies, engine fairings...
                     
-                    if (meshF.renderer.gameObject.activeInHierarchy)
+                    if (meshF.gameObject.GetComponent<Renderer>().gameObject.activeInHierarchy)
                     {
                         Mesh mesh = meshF.mesh;
                         //create the trans. matrix for this mesh (also update the bounds)

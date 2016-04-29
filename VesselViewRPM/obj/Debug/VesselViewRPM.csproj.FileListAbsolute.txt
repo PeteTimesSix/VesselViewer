@@ -1,0 +1,5 @@
+H:\Paul\Documents\Games\KSP modding\VesselViewer-master\VesselViewRPM\obj\Debug\VesselViewRPM.csprojResolveAssemblyReference.cache
+H:\Program Files (x86)\Steam\SteamApps\common\Kerbal Space Program\GameData\VesselView\Plugins\VesselViewRPM.dll
+H:\Program Files (x86)\Steam\SteamApps\common\Kerbal Space Program\GameData\VesselView\Plugins\VesselViewRPM.pdb
+H:\Paul\Documents\Games\KSP modding\VesselViewer-master\VesselViewRPM\obj\Debug\VesselViewRPM.dll
+H:\Paul\Documents\Games\KSP modding\VesselViewer-master\VesselViewRPM\obj\Debug\VesselViewRPM.pdb
